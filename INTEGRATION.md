@@ -35,10 +35,18 @@ Create `.npmrc` in WarFaire root:
 ### Install Platform Packages
 
 ```bash
+# Backend SDK and core engine
 npm install @pirate/game-sdk@latest
 npm install @pirate/core-engine@latest
+
+# TypeScript and React types
 npm install typescript@latest --save-dev
 npm install @types/node@latest --save-dev
+npm install @types/react@latest --save-dev
+npm install @types/react-dom@latest --save-dev
+
+# React as peer dependency (consumer provides version)
+npm install react@latest react-dom@latest --save-dev
 ```
 
 ## Step 2: Create TypeScript Configuration
@@ -69,7 +77,7 @@ Create `tsconfig.json`:
 }
 ```
 
-## Step 3: Create Game Adapter
+## Step 3A: Create Backend Game Adapter
 
 Create `src/WarFaireGame.ts` that wraps your existing game logic:
 
@@ -331,22 +339,79 @@ export class WarFaireGame extends GameBase {
 }
 ```
 
+## Step 3B: Create Frontend Client Component
+
+Create `src/WarFaireClient.tsx` as a React component:
+
+```typescript
+import React, { useState, useEffect } from 'react';
+
+type WarFaireGameState = {
+  phase: string;
+  seats: Seat[];
+  activeCategories?: Category[];
+  categoryPrestige?: Record<string, number>;
+  currentFair?: number;
+  currentRound?: number;
+};
+
+type WarFaireClientProps = {
+  game: WarFaireGameState | null;
+  meId: string;
+  onPlayerAction: (action: string, data?: any) => void;
+  onSitDown: (seatIndex: number, buyInAmount: number) => void;
+  onStandUp: () => void;
+  isSeated: boolean;
+};
+
+export default function WarFaireClient({
+  game,
+  meId,
+  onPlayerAction,
+  onSitDown,
+  onStandUp,
+  isSeated
+}: WarFaireClientProps) {
+  // Component renders card hands, played cards, categories, ribbons, VP
+  // Handles card selection and submission
+  // See full implementation in src/WarFaireClient.tsx
+
+  return (
+    <div className="h-full flex flex-col p-4">
+      {/* Game UI implementation */}
+    </div>
+  );
+}
+```
+
+## Step 3C: Create Package Index
+
+Create `src/index.ts` to export both backend and frontend:
+
+```typescript
+// Export backend game logic
+export { WarFaireGame } from './WarFaireGame';
+
+// Export frontend React component
+export { default as WarFaireClient } from './WarFaireClient';
+```
+
 ## Step 4: Create Game Manifest
 
 Create `manifest.json`:
 
 ```json
 {
-  "gameId": "warfare",
-  "gameType": "warfare",
+  "gameId": "warfaire",
+  "gameType": "warfaire",
   "displayName": "War Faire",
   "version": "0.1.0",
   "description": "State Fair card game with prestige, ribbons, and competitive scoring",
   "minPlayers": 4,
   "maxPlayers": 10,
   "assets": {
-    "serverPackage": "@pirate/game-warfare",
-    "clientBundle": "warfare-client.js"
+    "serverPackage": "@pirate/game-warfaire",
+    "clientComponent": "WarFaireClient"
   },
   "deployment": {
     "timestamp": "",
@@ -361,12 +426,11 @@ Modify your existing `package.json`:
 
 ```json
 {
-  "name": "@pirate/game-warfare",
-  "version": "0.1.0",
+  "name": "@pirate/game-warfaire",
+  "version": "0.1.2",
   "description": "War Faire card game for Pirate Platform",
-  "main": "dist/src/WarFaireGame.js",
-  "types": "dist/src/WarFaireGame.d.ts",
-  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist/",
     "manifest.json",
@@ -384,13 +448,21 @@ Modify your existing `package.json`:
     "publish:verdaccio": "npm publish --registry http://vps-0b87e710.tail751d97.ts.net:4873/"
   },
   "dependencies": {
-    "@pirate/game-sdk": "^0.1.0",
     "@pirate/core-engine": "^0.1.0",
+    "@pirate/game-sdk": "^0.1.0",
     "express": "^4.18.2",
     "socket.io": "^4.7.2"
   },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "typescript": "^5.9.2"
   },
   "publishConfig": {
@@ -401,6 +473,13 @@ Modify your existing `package.json`:
   "license": "MIT"
 }
 ```
+
+**Key changes:**
+- Package name: `@pirate/game-warfaire` (not warfare)
+- Main entry: `dist/index.js` (exports both backend and frontend)
+- **Removed `"type": "module"`** (must use CommonJS for Node.js compatibility)
+- Added `peerDependencies` for React (consumer provides version)
+- Added React types to `devDependencies`
 
 ## Step 6: Build and Publish
 
@@ -416,28 +495,108 @@ npm run publish:verdaccio
 
 In the PiratePlunder repository:
 
+### Backend Integration
+
+1. **Install package** (in backend workspace):
 ```bash
-# Install WarFaire package
 cd /home/nathan/GitHub/PiratePlunder
-npm install @pirate/game-warfare@latest
+npm install --workspace @pirate/game-pirate-plunder-backend @pirate/game-warfaire@latest
+```
 
-# Register in backend (games/pirate-plunder/backend/src/server.ts)
-import { WarFaireGame } from '@pirate/game-warfare';
-gameRegistry.registerGameType('warfare', WarFaireGame as any);
+2. **Register game** in `games/pirate-plunder/backend/src/server.ts`:
+```typescript
+import { WarFaireGame } from '@pirate/game-warfaire';
 
+// Register game types with the registry
+gameRegistry.registerGameType('warfaire', WarFaireGame as any);
+```
+
+3. **Add routing** in join handler (around line 3256):
+```typescript
+// Route to warfaire game if selected
+if (selectedGameType === 'warfaire') {
+  if (warfaireGame) {
+    warfaireGame.registerSocket(socket, player);
+    socket.emit('joined', { player, isAdmin });
+
+    const gameState = warfaireGame.getGameState();
+    if (gameState) {
+      socket.emit('game_state', gameState);
+    }
+
+    console.log(`🎪 Player ${player.name} joined War Faire game`);
+  } else {
+    socket.emit('error', 'War Faire game not available');
+  }
+  return; // Exit early
+}
+```
+
+### Frontend Integration
+
+1. **Import WarFaireClient** in `games/pirate-plunder/frontend/src/components/GameApp.tsx`:
+```typescript
+import { WarFaireClient } from '@pirate/game-warfaire';
+```
+
+2. **Add WarFaire rendering** (around line 700):
+```typescript
+{gameType === 'coin-flip' ? (
+  <CoinFlipTable ... />
+) : gameType === 'warfaire' ? (
+  <WarFaireClient
+    game={game}
+    meId={me?.id || ''}
+    onPlayerAction={handlePlayerAction}
+    onSitDown={handleSitDown}
+    onStandUp={handleStandUp}
+    isSeated={isSeated}
+  />
+) : (
+  <ImprovedGameTable ... />
+)}
+```
+
+3. **Add to GameSelector** in `games/pirate-plunder/frontend/src/components/GameSelector.tsx`:
+```typescript
+export type GameType = 'coin-flip' | 'pirate-plunder' | 'warfaire'
+
+const games = [
+  // ... existing games
+  {
+    gameId: 'warfaire-1',
+    gameType: 'warfaire',
+    displayName: 'War Faire',
+    description: 'State fair card game with prestige, ribbons, and competitive scoring!',
+    minPlayers: 4,
+    maxPlayers: 10,
+    emoji: '🎪',
+  }
+]
+```
+
+4. **Add GameRouter case** in `games/pirate-plunder/frontend/src/components/GameRouter.tsx`:
+```typescript
+case 'warfaire':
+  return <GameApp gameType="warfaire" onBackToMenu={handleBackToSelector} />
+```
+
+### Deploy
+
+```bash
 # Build and deploy
 make build
-./deploy-direct.sh
+# Use Tailscale SSH deployment method from CLAUDE.md
 ```
 
 ## Development Workflow
 
 ### Making Changes
 
-1. Edit WarFaire code in this repo
-2. Increment version in package.json (0.1.0 → 0.1.1)
+1. Edit WarFaire code in this repo (backend or frontend)
+2. Increment version in package.json (0.1.2 → 0.1.3)
 3. `npm run build && npm run publish:verdaccio`
-4. In PiratePlunder: `npm update @pirate/game-warfare`
+4. In PiratePlunder: `npm update @pirate/game-warfaire`
 5. Rebuild and redeploy platform
 
 ### Testing Locally
@@ -453,16 +612,18 @@ Or test integrated with platform:
 npm link
 
 # In PiratePlunder
-npm link @pirate/game-warfare
+npm link @pirate/game-warfaire
 ```
 
 ## Benefits
 
-✅ WarFaire keeps its own repo and git history
-✅ Platform provides auth, database, deployment
-✅ Both games available from one URL
-✅ Shared user accounts and bankrolls
-✅ Independent release cycles
+✅ **Full-stack modularity**: Game packages include both backend and frontend
+✅ **Self-contained**: Each game is a complete npm package with its own UI
+✅ **Independent repos**: WarFaire keeps its own git history and development cycle
+✅ **Shared infrastructure**: Platform provides auth, database, deployment
+✅ **Unified experience**: All games available from one URL
+✅ **Shared accounts**: User accounts and bankrolls work across all games
+✅ **React compatibility**: Frontend uses same React version as platform (peer dependency)
 
 ## Next Steps
 

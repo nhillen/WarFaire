@@ -12,50 +12,47 @@ export class WarFaireGame extends GameBase {
   constructor(tableConfig: any) {
     super(tableConfig);
     this.tableConfig.maxSeats = 10; // WarFaire supports up to 10 players
+    this.initializeGameState('Lobby'); // Initialize with lobby state
   }
 
   startHand(): void {
-    if (!this.gameState) {
-      console.log('🎪 Starting WarFaire game...');
+    if (!this.gameState) return;
 
-      // Get player names from connected players
-      const playerNames = Array.from(this.connectedPlayers.values()).map(p => p.name);
+    console.log('🎪 Starting WarFaire game...');
 
-      // Initialize WarFaire game instance
-      this.warfaireInstance = new Game(playerNames);
-      this.currentFair = 1;
-      this.currentRound = 0;
-
-      // Setup first Fair
-      this.warfaireInstance.setupFirstFair();
-
-      // Initialize platform game state
-      this.gameState = {
-        phase: 'Waiting',
-        seats: Array.from(this.connectedPlayers.values()).map((p, index) => ({
-          playerId: p.id,
-          name: p.name,
-          isAI: p.isAI,
-          tableStack: p.bankroll,
-          currentBet: 0,
-          hasFolded: false,
-          hasActed: false,
-          dice: [], // WarFaire uses cards, not dice
-          // Custom WarFaire fields
-          hand: [],
-          playedCards: [],
-          faceDownCards: [],
-          ribbons: [],
-          totalVP: 0
-        })),
-        pot: 0,
-        currentBet: 0,
-        // WarFaire-specific state
-        activeCategories: this.warfaireInstance.activeCategories,
-        categoryPrestige: this.warfaireInstance.categoryPrestige,
-        currentFair: this.currentFair
-      } as any;
+    // Get player names from seated players (not connectedPlayers!)
+    const seatedPlayers = this.gameState.seats.filter(s => s !== null);
+    if (seatedPlayers.length < 2) {
+      console.log('🎪 Not enough seated players to start');
+      return;
     }
+
+    const playerNames = seatedPlayers.map(s => s.name);
+
+    // Initialize WarFaire game instance
+    this.warfaireInstance = new Game(playerNames);
+    this.currentFair = 1;
+    this.currentRound = 0;
+
+    // Setup first Fair
+    this.warfaireInstance.setupFirstFair();
+
+    // Add WarFaire-specific fields to existing seats
+    this.gameState.seats.forEach((seat, index) => {
+      if (seat) {
+        seat.hand = [];
+        seat.playedCards = [];
+        seat.faceDownCards = [];
+        seat.ribbons = [];
+        seat.totalVP = 0;
+      }
+    });
+
+    // Update game state with WarFaire-specific data
+    this.gameState.phase = 'Waiting';
+    (this.gameState as any).activeCategories = this.warfaireInstance.activeCategories;
+    (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
+    (this.gameState as any).currentFair = this.currentFair;
 
     // Start first round
     this.startRound();
@@ -112,6 +109,10 @@ export class WarFaireGame extends GameBase {
         seat.playedCards = wfPlayer.playedCards;
         seat.ribbons = wfPlayer.ribbons;
         seat.totalVP = wfPlayer.totalVP;
+
+        // Add current round's face-up card (last card in playedCards if any this round)
+        const recentCards = wfPlayer.playedCards.slice(-1);
+        (seat as any).currentFaceUpCard = recentCards.length > 0 ? recentCards[0] : null;
       }
     });
 
@@ -123,10 +124,16 @@ export class WarFaireGame extends GameBase {
   }
 
   handlePlayerAction(playerId: string, action: string, data?: any): void {
-    if (!this.warfaireInstance || !this.gameState) return;
+    if (!this.gameState) return;
 
     switch(action) {
+      case 'start_hand':
+        if (this.gameState.phase === 'Lobby' && this.canStartHand()) {
+          this.startHand();
+        }
+        break;
       case 'play_cards':
+        if (!this.warfaireInstance) return;
         this.handlePlayCards(playerId, data);
         break;
       case 'select_category':
@@ -204,9 +211,14 @@ export class WarFaireGame extends GameBase {
     });
 
     // Check if round should be processed
-    const allActed = this.gameState.seats.every(s => s.hasFolded || s.hasActed);
+    const allActed = this.gameState.seats.every(s => !s || s.hasFolded || s.hasActed);
     if (allActed) {
       this.processRound();
+    } else {
+      console.log('🎪 Not all players acted yet:', {
+        total: this.gameState.seats.filter(s => s).length,
+        acted: this.gameState.seats.filter(s => s && s.hasActed).length
+      });
     }
   }
 
@@ -295,16 +307,21 @@ export class WarFaireGame extends GameBase {
   private endGame(): void {
     const winners = this.evaluateWinners();
 
-    // Distribute winnings
-    winners.forEach(winner => {
-      const player = this.connectedPlayers.get(winner.playerId);
-      if (player) {
-        player.bankroll += winner.payout;
-      }
-    });
+    // Distribute winnings to table stacks
+    this.payoutWinners(winners);
 
-    // Mark game as complete
-    this.gameState!.phase = 'GameComplete';
+    // Broadcast winner announcement
+    if (winners.length > 0) {
+      this.broadcast('player_action', {
+        playerName: winners[0].name,
+        action: 'won',
+        details: `${winners[0].payout / 10} VP`,
+        isAI: false,
+      });
+    }
+
+    // Use GameBase's endHand to clean up and return to Lobby
+    this.endHand();
     this.broadcastGameState();
   }
 
@@ -327,6 +344,10 @@ export class WarFaireGame extends GameBase {
 
   getValidActions(playerId: string): string[] {
     const phase = this.gameState?.phase || '';
+
+    if (phase === 'Lobby') {
+      return this.canStartHand() ? ['start_hand'] : [];
+    }
 
     if (phase.startsWith('Fair') && phase.includes('Round')) {
       return ['play_cards', 'select_category'];
