@@ -1,0 +1,3 @@
+# WarFaire
+
+A new project.
