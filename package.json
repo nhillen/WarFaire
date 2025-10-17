@@ -6,9 +6,14 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
+    "server": "node server.js",
     "test": "node test.js"
   },
   "keywords": ["game", "card-game", "fair"],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
 }

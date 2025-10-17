@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>State Fair Card Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Lobby Screen -->
+    <div id="lobby" class="screen active">
+      <div class="container">
+        <h1>🎪 State Fair</h1>
+        <p class="subtitle">A strategic card game about showcasing produce and baked goods</p>
+
+        <div class="form-section">
+          <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+          <input type="text" id="gameId" placeholder="Game ID (or create new)" maxlength="20">
+          <button id="joinBtn" class="btn btn-primary">Join Game</button>
+        </div>
+
+        <div id="playerList" class="player-list hidden">
+          <h2>Players in Lobby</h2>
+          <ul id="players"></ul>
+          <p id="waitingMsg" class="waiting-msg">Waiting for at least 4 players...</p>
+          <div class="lobby-buttons">
+            <button id="addAIBtn" class="btn btn-secondary">Add 3 AI Players</button>
+            <button id="startBtn" class="btn btn-success hidden">Start Game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game" class="screen">
+      <div class="game-header">
+        <div class="game-info">
+          <h2>Fair <span id="fairNumber">1</span> - Round <span id="roundNumber">1</span></h2>
+          <div class="deck-info">Deck: <span id="deckSize">0</span> cards</div>
+        </div>
+        <div id="playerInfo" class="player-info">
+          <span id="playerNameDisplay"></span>
+          <span class="vp">VP: <span id="playerVP">0</span></span>
+          <span class="ribbons">Ribbons: <span id="playerRibbons">0</span></span>
+        </div>
+      </div>
+
+      <div class="game-content">
+        <!-- Categories Panel -->
+        <div class="categories-panel">
+          <h3>Active Categories</h3>
+          <div id="categories" class="categories-grid"></div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="main-area">
+          <!-- Your Played Cards -->
+          <div class="played-section">
+            <h3>Your Played Cards This Fair</h3>
+            <div id="playedCards" class="cards-area">
+              <p class="empty-msg">No cards played yet</p>
+            </div>
+          </div>
+
+          <!-- Your Hand -->
+          <div class="hand-section">
+            <h3>Your Hand</h3>
+            <div id="hand" class="cards-area cards-hand">
+              <p class="empty-msg">Waiting for cards...</p>
+            </div>
+          </div>
+
+          <!-- Card Selection Area -->
+          <div id="selectionArea" class="selection-area hidden">
+            <div class="selection-box">
+              <h4>Face-Up Card (scores this Fair)</h4>
+              <div id="faceUpSlot" class="card-slot empty">
+                <span>Select a card</span>
+              </div>
+              <div id="faceUpGroup" class="group-selection hidden">
+                <label>Select category:</label>
+                <select id="faceUpCategory"></select>
+              </div>
+            </div>
+
+            <div class="selection-box">
+              <h4>Face-Down Card (next Fair)</h4>
+              <div id="faceDownSlot" class="card-slot empty">
+                <span>Select a card</span>
+              </div>
+              <div id="faceDownGroup" class="group-selection hidden">
+                <label>Select category:</label>
+                <select id="faceDownCategory"></select>
+              </div>
+            </div>
+
+            <button id="submitBtn" class="btn btn-primary" disabled>Submit Cards</button>
+            <button id="clearBtn" class="btn btn-secondary">Clear Selection</button>
+          </div>
+
+          <div id="waitingArea" class="waiting-area hidden">
+            <p>Waiting for other players...</p>
+            <p><span id="waitingCount">0</span> / <span id="totalPlayers">0</span> players ready</p>
+          </div>
+        </div>
+
+        <!-- Standings Panel -->
+        <div class="standings-panel">
+          <h3>Standings</h3>
+          <div id="standings" class="standings-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results" class="screen">
+      <div class="container">
+        <h1 id="resultsTitle">Fair Results</h1>
+
+        <div id="fairResults" class="results-section">
+          <h2>Category Winners</h2>
+          <div id="categoryResults"></div>
+
+          <h2>Group Winners</h2>
+          <div id="groupResults"></div>
+
+          <h2>Prestige Updates</h2>
+          <div id="prestigeUpdates"></div>
+        </div>
+
+        <div id="standings" class="standings-section">
+          <h2>Current Standings</h2>
+          <div id="standingsResults"></div>
+        </div>
+
+        <div id="nextFairMsg" class="next-fair-msg hidden">
+          <p>Next Fair starting soon...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOver" class="screen">
+      <div class="container">
+        <h1>🏆 Game Over!</h1>
+
+        <div class="winner-section">
+          <h2 id="winnerName"></h2>
+          <p class="winner-vp"><span id="winnerVP"></span> Victory Points</p>
+        </div>
+
+        <div class="final-standings">
+          <h2>Final Standings</h2>
+          <div id="finalStandings"></div>
+        </div>
+
+        <button id="newGameBtn" class="btn btn-primary">Start New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
