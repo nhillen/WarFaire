@@ -19,6 +19,25 @@ let gameState = {
   deckSize: 0
 };
 
+// Category emojis
+const CATEGORY_EMOJIS = {
+  'Carrots': '🥕',
+  'Pumpkins': '🎃',
+  'Tomatoes': '🍅',
+  'Corn': '🌽',
+  'Pies': '🥧',
+  'Cakes': '🎂',
+  'Cookies': '🍪',
+  'Breads': '🍞',
+  'Pigs': '🐷',
+  'Cows': '🐄',
+  'Chickens': '🐔',
+  'Goats': '🐐',
+  'Produce': '🌾',
+  'Baking': '🧁',
+  'Livestock': '🐮'
+};
+
 // DOM Elements
 const screens = {
   lobby: document.getElementById('lobby'),
@@ -112,7 +131,8 @@ function createCardElement(card, index) {
 
   const categoryEl = document.createElement('div');
   categoryEl.className = 'card-category';
-  categoryEl.textContent = card.category;
+  const emoji = CATEGORY_EMOJIS[card.category] || '';
+  categoryEl.textContent = emoji ? `${emoji} ${card.category}` : card.category;
 
   const valueEl = document.createElement('div');
   valueEl.className = 'card-value';
@@ -283,7 +303,8 @@ function renderCategories() {
 
     const nameEl = document.createElement('div');
     nameEl.className = 'category-name';
-    nameEl.textContent = cat.name;
+    const emoji = CATEGORY_EMOJIS[cat.name] || '';
+    nameEl.textContent = emoji ? `${emoji} ${cat.name}` : cat.name;
 
     const groupEl = document.createElement('div');
     groupEl.className = 'category-group';
@@ -318,7 +339,8 @@ function renderPlayedCards() {
 
     const categoryEl = document.createElement('div');
     categoryEl.className = 'card-category';
-    categoryEl.textContent = card.category;
+    const emoji = CATEGORY_EMOJIS[card.category] || '';
+    categoryEl.textContent = emoji ? `${emoji} ${card.category}` : card.category;
 
     const valueEl = document.createElement('div');
     valueEl.className = 'card-value';

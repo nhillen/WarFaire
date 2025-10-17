@@ -301,10 +301,12 @@ input[type="text"]:focus {
 }
 
 .card-category {
-  font-size: 0.9em;
+  font-size: 0.75em;
   font-weight: 600;
   color: #2d3748;
   text-align: center;
+  line-height: 1.2;
+  padding: 0 4px;
 }
 
 .card-value {
