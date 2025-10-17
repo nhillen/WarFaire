@@ -1,0 +1,14 @@
+{
+  "name": "warfaire",
+  "version": "0.1.0",
+  "description": "State Fair Card Game Prototype",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "keywords": ["game", "card-game", "fair"],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,89 @@
+// Player class
+
+export class Player {
+  constructor(name, id) {
+    this.name = name;
+    this.id = id;
+    this.hand = [];
+    this.faceDownCards = []; // Cards that will auto-play next round
+    this.playedCards = []; // Cards played this Fair
+    this.ribbons = []; // Ribbons earned { category, type: 'gold'|'silver'|'bronze', vp }
+    this.totalVP = 0;
+  }
+
+  addToHand(card) {
+    this.hand.push(card);
+  }
+
+  removeFromHand(card) {
+    const index = this.hand.indexOf(card);
+    if (index > -1) {
+      this.hand.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  playCardFaceUp(card) {
+    if (this.removeFromHand(card)) {
+      this.playedCards.push(card);
+      return true;
+    }
+    return false;
+  }
+
+  playCardFaceDown(card) {
+    if (this.removeFromHand(card)) {
+      this.faceDownCards.push(card);
+      return true;
+    }
+    return false;
+  }
+
+  flipFaceDownCards() {
+    // Move face-down cards to played cards
+    this.playedCards.push(...this.faceDownCards);
+    const flipped = [...this.faceDownCards];
+    this.faceDownCards = [];
+    return flipped;
+  }
+
+  getCategoryTotal(categoryName) {
+    return this.playedCards
+      .filter(card => card.getEffectiveCategory() === categoryName)
+      .reduce((sum, card) => sum + card.value, 0);
+  }
+
+  addRibbon(category, type, vp) {
+    this.ribbons.push({ category, type, vp });
+    this.totalVP += vp;
+  }
+
+  getGroupVP(groupName, activeCategories) {
+    // Sum VP from ribbons in categories that belong to this group
+    return this.ribbons
+      .filter(ribbon => {
+        const category = activeCategories.find(cat => cat.name === ribbon.category);
+        return category && category.group === groupName;
+      })
+      .reduce((sum, ribbon) => sum + ribbon.vp, 0);
+  }
+
+  clearForNextFair() {
+    this.hand = [];
+    this.playedCards = [];
+    // Keep ribbons and face-down cards
+  }
+
+  reset() {
+    this.hand = [];
+    this.faceDownCards = [];
+    this.playedCards = [];
+    this.ribbons = [];
+    this.totalVP = 0;
+  }
+
+  toString() {
+    return `${this.name} (VP: ${this.totalVP})`;
+  }
+}
