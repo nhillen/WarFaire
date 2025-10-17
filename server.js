@@ -453,5 +453,5 @@ function endGame(gameId, game) {
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`🎪 State Fair server running on http://localhost:${PORT}`);
+  console.log(`⚔️ War Faire server running on http://localhost:${PORT}`);
 });

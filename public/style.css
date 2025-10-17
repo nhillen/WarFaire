@@ -316,14 +316,16 @@ input[type="text"]:focus {
 
 .card-group-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 0;
+  left: 0;
   background: #f59e0b;
   color: white;
-  font-size: 0.7em;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-size: 0.65em;
+  padding: 4px 8px;
   font-weight: 600;
+  border-radius: 8px 0 6px 0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
 }
 
 .empty-msg {

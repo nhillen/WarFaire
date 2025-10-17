@@ -495,7 +495,7 @@ function showScreen(screenName) {
 function showFairResults(data) {
   showScreen('results');
 
-  document.getElementById('resultsTitle').textContent = `Fair ${data.fair} Results`;
+  document.getElementById('resultsTitle').textContent = `⚔️ Faire ${data.fair} Results`;
 
   // Category results
   const categoryResults = document.getElementById('categoryResults');
