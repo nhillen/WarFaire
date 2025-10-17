@@ -1,19 +1,40 @@
 {
-  "name": "warfaire",
+  "name": "@pirate/game-warfare",
   "version": "0.1.0",
-  "description": "State Fair Card Game Prototype",
-  "main": "index.js",
+  "description": "War Faire card game for Pirate Platform",
+  "main": "dist/src/WarFaireGame.js",
+  "types": "dist/src/WarFaireGame.d.ts",
   "type": "module",
+  "files": [
+    "dist/",
+    "manifest.json",
+    "public/",
+    "game.js",
+    "card.js",
+    "player.js",
+    "scorer.js"
+  ],
   "scripts": {
     "start": "node index.js",
     "server": "node server.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "build": "tsc && cp manifest.json dist/",
+    "publish:verdaccio": "npm publish --registry http://vps-0b87e710.tail751d97.ts.net:4873/"
   },
-  "keywords": ["game", "card-game", "fair"],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
+    "@pirate/game-sdk": "^0.1.0",
+    "@pirate/core-engine": "^0.1.0",
     "express": "^4.18.2",
     "socket.io": "^4.7.2"
-  }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "registry": "http://vps-0b87e710.tail751d97.ts.net:4873/"
+  },
+  "keywords": ["game", "card-game", "fair", "pirate-platform"],
+  "author": "",
+  "license": "MIT"
 }
