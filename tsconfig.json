@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "DOM"],
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
@@ -14,7 +14,9 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "allowJs": false
+    "allowJs": false,
+    "jsx": "react",
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "*.js", "test.js", "server.js", "index.js", "game.js", "card.js", "player.js", "scorer.js"]
