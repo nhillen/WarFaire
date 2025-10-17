@@ -3,7 +3,7 @@ import { Game } from '../game.js';
 import { scoreFair } from '../scorer.js';
 
 export class WarFaireGame extends GameBase {
-  gameType = 'warfare';
+  gameType = 'warfaire';
   private warfaireInstance: Game | null = null;
   private pendingActions: Map<string, any> = new Map();
   private currentFair: number = 0;
