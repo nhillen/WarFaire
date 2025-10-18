@@ -160,6 +160,15 @@ export class WarFaireGame extends GameBase {
       groupSelections
     });
 
+    // Mark player as having acted
+    const seat = this.gameState!.seats.find(s => s?.playerId === playerId);
+    if (seat) {
+      seat.hasActed = true;
+    }
+
+    // Broadcast updated state so player sees "waiting for others"
+    this.broadcastGameState();
+
     // Check if all players have acted
     const nonFoldedSeats = this.gameState!.seats.filter(s => s && !s.hasFolded);
     console.log(`🎪 Pending actions: ${this.pendingActions.size} / ${nonFoldedSeats.length} players`);
@@ -236,6 +245,8 @@ export class WarFaireGame extends GameBase {
   private processRound(): void {
     if (!this.warfaireInstance || !this.gameState) return;
 
+    console.log(`🎪 Processing round - Fair ${this.currentFair}, Round ${this.currentRound}`);
+
     // Apply all pending actions from human players
     for (const [playerId, action] of this.pendingActions) {
       const seatIndex = this.gameState.seats.findIndex(s => s?.playerId === playerId);
@@ -272,12 +283,15 @@ export class WarFaireGame extends GameBase {
     this.pendingActions.clear();
 
     // Reset hasActed flags
+    console.log(`🎪 Resetting hasActed flags for all seats`);
     this.gameState.seats.forEach(s => { if (s) s.hasActed = false; });
 
     // Check if Fair is complete (3 rounds)
     if (this.currentRound >= 3) {
+      console.log(`🎪 Fair ${this.currentFair} complete, ending fair...`);
       this.endFair();
     } else {
+      console.log(`🎪 Starting next round...`);
       this.startRound();
     }
   }
