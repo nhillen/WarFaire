@@ -178,7 +178,7 @@ export default function WarFaireClient({
   // ===== LOBBY VIEW - KEEPING EXISTING LOGIC =====
   if (game.phase === 'Lobby') {
     const seatedPlayers = game.seats.filter((s: any) => s && s.playerId);
-    const canStart = seatedPlayers.length >= 2;
+    const canStart = seatedPlayers.length >= 4; // Require 4 players minimum
     const emptySeats = game.seats.filter((s: any) => !s || !s.playerId).length;
 
     console.log('🎪 Lobby state:', {
@@ -455,11 +455,11 @@ export default function WarFaireClient({
                                 <th className="text-right px-4 py-2 font-medium text-slate-600">Points</th>
                               </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="bg-white">
                               {allScores.map((player, idx) => (
                                 <tr
                                   key={player.playerId}
-                                  className={`border-t border-slate-100 ${player.playerId === meId ? 'bg-purple-50' : ''}`}
+                                  className={`border-t border-slate-100 ${player.playerId === meId ? 'bg-purple-50' : 'bg-white'}`}
                                 >
                                   <td className="px-4 py-2">{player.name}</td>
                                   <td className="px-4 py-2 text-right font-medium">
