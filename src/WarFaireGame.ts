@@ -145,6 +145,8 @@ export class WarFaireGame extends GameBase {
   private handlePlayCards(playerId: string, data: any): void {
     const { faceUpCard, faceDownCard, groupSelections } = data;
 
+    console.log(`🎪 Received play_cards from ${playerId}:`, { faceUpCard, faceDownCard });
+
     // Store pending action
     this.pendingActions.set(playerId, {
       faceUpCard,
@@ -153,8 +155,11 @@ export class WarFaireGame extends GameBase {
     });
 
     // Check if all players have acted
-    const nonFoldedSeats = this.gameState!.seats.filter(s => !s.hasFolded);
+    const nonFoldedSeats = this.gameState!.seats.filter(s => s && !s.hasFolded);
+    console.log(`🎪 Pending actions: ${this.pendingActions.size} / ${nonFoldedSeats.length} players`);
+
     if (this.pendingActions.size === nonFoldedSeats.length) {
+      console.log('🎪 All players acted, processing round...');
       this.processRound();
     }
   }
