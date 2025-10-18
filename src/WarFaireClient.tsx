@@ -71,6 +71,8 @@ export default function WarFaireClient({
   const [selectedFaceDown, setSelectedFaceDown] = useState<{ card: Card; index: number } | null>(null);
   const [faceUpCategory, setFaceUpCategory] = useState<string>('');
   const [faceDownCategory, setFaceDownCategory] = useState<string>('');
+  const [showStandings, setShowStandings] = useState(false);
+  const [activeTab, setActiveTab] = useState<'hand' | 'played'>('hand');
 
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
   const myHand = mySeat?.hand || [];
@@ -310,8 +312,6 @@ export default function WarFaireClient({
 
   const hasActed = mySeat?.hasActed || false;
   const waitingForOthers = hasActed || (game.phase.includes('Round') && myHand.length === 0);
-  const [showStandings, setShowStandings] = useState(false);
-  const [activeTab, setActiveTab] = useState<'hand' | 'played'>('hand');
 
   return (
     <div className="h-full flex flex-col bg-slate-100">
