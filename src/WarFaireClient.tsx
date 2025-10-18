@@ -86,13 +86,21 @@ export default function WarFaireClient({
   // Auto-sit player when they first see the game
   useEffect(() => {
     if (game && !isSeated && game.phase === 'Lobby') {
-      // Find first empty seat
-      const emptySeatIndex = game.seats.findIndex(s => !s || !s.playerId);
-      if (emptySeatIndex !== -1) {
-        onSitDown(emptySeatIndex, 1000);
+      // Check if player is already seated (by meId/playerId)
+      const alreadySeated = game.seats.some(s => s && s.playerId === meId);
+
+      if (!alreadySeated) {
+        // Find first empty seat
+        const emptySeatIndex = game.seats.findIndex(s => !s || !s.playerId);
+        if (emptySeatIndex !== -1) {
+          console.log(`🪑 Auto-sitting player ${meId} at seat ${emptySeatIndex}`);
+          onSitDown(emptySeatIndex, 1000);
+        }
+      } else {
+        console.log(`🪑 Player ${meId} already seated, not auto-sitting again`);
       }
     }
-  }, [game, isSeated]);
+  }, [game, isSeated, meId]);
 
   // Reset selections when round changes
   useEffect(() => {
@@ -161,6 +169,8 @@ export default function WarFaireClient({
     const canStart = seatedPlayers.length >= 2;
     const emptySeats = game.seats.filter((s: any) => !s || !s.playerId).length;
 
+    console.log('🎪 Lobby state:', { seatedPlayers: seatedPlayers.length, emptySeats, canStart });
+
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 bg-slate-50">
         <div className="max-w-4xl w-full">
@@ -212,7 +222,10 @@ export default function WarFaireClient({
             )}
             {emptySeats >= 9 && (
               <button
-                onClick={() => onPlayerAction('add_ai', { count: 9 })}
+                onClick={() => {
+                  console.log('🎪 Clicked +9 AI button');
+                  onPlayerAction('add_ai', { count: 9 });
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               >
                 +9 AI
@@ -220,7 +233,10 @@ export default function WarFaireClient({
             )}
             {emptySeats >= 4 && (
               <button
-                onClick={() => onPlayerAction('add_ai', { count: 4 })}
+                onClick={() => {
+                  console.log('🎪 Clicked +4 AI button');
+                  onPlayerAction('add_ai', { count: 4 });
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               >
                 +4 AI
@@ -228,7 +244,10 @@ export default function WarFaireClient({
             )}
             {emptySeats > 0 && (
               <button
-                onClick={() => onPlayerAction('fill_ai')}
+                onClick={() => {
+                  console.log('🎪 Clicked Fill All button');
+                  onPlayerAction('fill_ai');
+                }}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
               >
                 Fill All
