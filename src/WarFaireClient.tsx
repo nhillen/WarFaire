@@ -94,13 +94,28 @@ export default function WarFaireClient({
 
   // ===== EXISTING AUTO-SIT LOGIC - DO NOT MODIFY =====
   useEffect(() => {
+    console.log(`🪑 Auto-sit check:`, {
+      hasGame: !!game,
+      isSeated,
+      phase: game?.phase,
+      meId,
+      seatsCount: game?.seats?.length,
+      seats: game?.seats?.map(s => s ? { playerId: s.playerId, name: s.name } : null)
+    });
+
     if (game && !isSeated && game.phase === 'Lobby') {
       const alreadySeated = game.seats.some(s => s && s.playerId === meId);
+      console.log(`🪑 Already seated check:`, alreadySeated, 'meId:', meId);
+
       if (!alreadySeated) {
         const emptySeatIndex = game.seats.findIndex(s => !s || !s.playerId);
+        console.log(`🪑 Empty seat found at index:`, emptySeatIndex);
+
         if (emptySeatIndex !== -1) {
           console.log(`🪑 Auto-sitting player ${meId} at seat ${emptySeatIndex}`);
           onSitDown(emptySeatIndex, 1000);
+        } else {
+          console.log(`🪑 No empty seats available`);
         }
       } else {
         console.log(`🪑 Player ${meId} already seated, not auto-sitting again`);
@@ -166,7 +181,13 @@ export default function WarFaireClient({
     const canStart = seatedPlayers.length >= 2;
     const emptySeats = game.seats.filter((s: any) => !s || !s.playerId).length;
 
-    console.log('🎪 Lobby state:', { seatedPlayers: seatedPlayers.length, emptySeats, canStart });
+    console.log('🎪 Lobby state:', {
+      seatedPlayersCount: seatedPlayers.length,
+      seatedPlayers: seatedPlayers.map((s: any) => ({ id: s.playerId, name: s.name, isAI: s.isAI })),
+      emptySeats,
+      canStart,
+      myId: meId
+    });
 
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 bg-slate-50">
@@ -260,6 +281,17 @@ export default function WarFaireClient({
   // ===== DERIVED DISPLAY DATA =====
   const hasActed = mySeat?.hasActed || false;
   const waitingForOthers = hasActed;
+
+  console.log('🎮 Game state:', {
+    phase: game.phase,
+    hasActed,
+    waitingForOthers,
+    myHandSize: myHand.length,
+    myPlayedCardsSize: myPlayedCards.length,
+    myId: meId,
+    mySeat: mySeat ? { name: mySeat.name, playerId: mySeat.playerId, hasActed: mySeat.hasActed } : null,
+    allSeats: game.seats?.map(s => s ? { playerId: s.playerId, name: s.name, hasActed: s.hasActed } : null)
+  });
 
   // Calculate per-category leaders (derived from existing data, no new logic)
   const getCategoryLeaders = (categoryName: string) => {
