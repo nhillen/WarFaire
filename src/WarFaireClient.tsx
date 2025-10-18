@@ -75,6 +75,9 @@ export default function WarFaireClient({
   const [activeTab, setActiveTab] = useState<'hand' | 'played'>('hand');
   const [boardTab, setBoardTab] = useState<'all' | 'you' | 'rivals'>('all');
 
+  // ===== UI STATE FOR POPOVER =====
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+
   // ===== DERIVED DATA FROM EXISTING PROPS =====
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
   const myHand = mySeat?.hand || [];
@@ -273,6 +276,24 @@ export default function WarFaireClient({
     return playerScores.sort((a, b) => b.score - a.score).slice(0, 3);
   };
 
+  // Get all player scores for popover (derived from existing data)
+  const getAllCategoryScores = (categoryName: string) => {
+    const playerScores: Array<{ name: string; score: number; playerId: string }> = [];
+
+    game.seats.forEach(seat => {
+      if (seat && seat.playedCards) {
+        const score = seat.playedCards
+          .filter(card => card.category === categoryName)
+          .reduce((sum, card) => sum + card.value, 0);
+        if (score > 0) {
+          playerScores.push({ name: seat.name, score, playerId: seat.playerId });
+        }
+      }
+    });
+
+    return playerScores.sort((a, b) => b.score - a.score);
+  };
+
   // Filter board players based on tab
   const getBoardPlayers = () => {
     const allPlayers = game.seats.filter(s => s && s.playerId);
@@ -325,39 +346,84 @@ export default function WarFaireClient({
                 const prestige = categoryPrestige[cat.name] || 0;
                 const leaders = getCategoryLeaders(cat.name);
                 const topScore = leaders[0]?.score || 0;
+                const allScores = getAllCategoryScores(cat.name);
 
                 return (
                   <div
                     key={cat.name}
-                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 flex items-center gap-2"
-                    style={{ height: '56px' }}
+                    className="relative"
                   >
-                    {/* Left: Icon + Name + Sublabel */}
-                    <span className="text-2xl" style={{ width: '24px', height: '24px', lineHeight: '24px' }}>{emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{cat.name}</div>
-                      <div className="text-xs text-slate-500">{cat.group}</div>
+                    <div
+                      className="bg-white border border-slate-300 rounded-lg px-4 py-2 flex items-center gap-2 cursor-default hover:border-slate-400 transition-colors"
+                      style={{ height: '56px' }}
+                      onMouseEnter={() => setHoveredCategory(cat.name)}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                    >
+                      {/* Left: Icon + Name + Sublabel */}
+                      <span className="text-2xl" style={{ width: '24px', height: '24px', lineHeight: '24px' }}>{emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">{cat.name}</div>
+                        <div className="text-xs text-slate-500">{cat.group}</div>
+                      </div>
+
+                      {/* Right: Leader strip + Total */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {leaders.slice(0, 3).map((leader, idx) => (
+                            <div key={leader.playerId} className="relative">
+                              <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-[10px]">
+                                {leader.name.charAt(0)}
+                              </div>
+                              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-purple-600 text-white text-[8px] flex items-center justify-center">
+                                {leader.score}
+                              </div>
+                            </div>
+                          ))}
+                          {leaders.length > 3 && (
+                            <div className="text-xs text-slate-500">+{leaders.length - 3}</div>
+                          )}
+                        </div>
+                        <div className="text-sm font-bold text-slate-700 min-w-[32px] text-right">{topScore}</div>
+                      </div>
                     </div>
 
-                    {/* Right: Leader strip + Total */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        {leaders.slice(0, 3).map((leader, idx) => (
-                          <div key={leader.playerId} className="relative">
-                            <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-[10px]">
-                              {leader.name.charAt(0)}
-                            </div>
-                            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-purple-600 text-white text-[8px] flex items-center justify-center">
-                              {leader.score}
-                            </div>
+                    {/* Popover on hover */}
+                    {hoveredCategory === cat.name && allScores.length > 0 && (
+                      <div
+                        className="absolute z-30 mt-2 w-72 bg-white border border-slate-300 rounded-lg shadow-lg overflow-hidden"
+                        style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
+                        onMouseEnter={() => setHoveredCategory(cat.name)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                      >
+                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{emoji}</span>
+                            <span className="text-sm font-semibold">{cat.name}</span>
                           </div>
-                        ))}
-                        {leaders.length > 3 && (
-                          <div className="text-xs text-slate-500">+{leaders.length - 3}</div>
-                        )}
+                        </div>
+                        <div className="max-h-64 overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-slate-50 sticky top-0">
+                              <tr>
+                                <th className="text-left px-4 py-2 font-medium text-slate-600">Player</th>
+                                <th className="text-right px-4 py-2 font-medium text-slate-600">Points</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {allScores.map((player, idx) => (
+                                <tr
+                                  key={player.playerId}
+                                  className={`border-t border-slate-100 ${player.playerId === meId ? 'bg-purple-50' : ''}`}
+                                >
+                                  <td className="px-4 py-2">{player.name}</td>
+                                  <td className="px-4 py-2 text-right font-medium">{player.score}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-slate-700 min-w-[32px] text-right">{topScore}</div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
