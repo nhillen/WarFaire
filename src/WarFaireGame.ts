@@ -182,12 +182,26 @@ export class WarFaireGame extends GameBase {
   private handleAITurns(): void {
     if (!this.warfaireInstance || !this.gameState) return;
 
+    console.log(`🎪 [AI] Starting AI turns handler`);
+    let aiActionsCount = 0;
+
     // Auto-play for AI players using existing WarFaire AI logic
     this.gameState.seats.forEach((seat, index) => {
+      console.log(`🎪 [AI] Checking seat ${index}:`, {
+        hasSeat: !!seat,
+        isAI: seat?.isAI,
+        hasFolded: seat?.hasFolded,
+        playerId: seat?.playerId,
+        name: seat?.name
+      });
+
       if (seat && seat.isAI && !seat.hasFolded) {
         const player = this.warfaireInstance!.players[index];
+        console.log(`🎪 [AI] AI player ${seat.name} at seat ${index} has ${player.hand.length} cards`);
 
         if (player.hand.length >= 2) {
+          console.log(`🎪 [AI] AI player ${seat.name} is playing cards...`);
+
           // Random AI selection (same as game.js)
           const faceUpCard = player.hand[Math.floor(Math.random() * player.hand.length)];
           const faceUpIndex = player.hand.indexOf(faceUpCard);
@@ -205,6 +219,7 @@ export class WarFaireGame extends GameBase {
           }
 
           player.playCardFaceUp(faceUpCard);
+          console.log(`🎪 [AI] AI ${seat.name} played face-up: ${faceUpCard.category} (${faceUpCard.value})`);
 
           // Play face-down
           if (player.hand.length > 0) {
@@ -223,22 +238,39 @@ export class WarFaireGame extends GameBase {
             }
 
             player.playCardFaceDown(faceDownCard);
+            console.log(`🎪 [AI] AI ${seat.name} played face-down: ${faceDownCard.category} (${faceDownCard.value})`);
           }
 
           seat.hasActed = true;
+          aiActionsCount++;
+          console.log(`🎪 [AI] AI ${seat.name} has acted (total AI actions: ${aiActionsCount})`);
+        } else {
+          console.log(`🎪 [AI] AI player ${seat.name} doesn't have enough cards (${player.hand.length} < 2)`);
         }
       }
     });
 
+    console.log(`🎪 [AI] AI turns complete. ${aiActionsCount} AI players acted.`);
+
     // Check if round should be processed
     const allActed = this.gameState.seats.every(s => !s || s.hasFolded || s.hasActed);
+    console.log('🎪 [AI] Checking if all players acted:', {
+      allActed,
+      total: this.gameState.seats.filter(s => s).length,
+      acted: this.gameState.seats.filter(s => s && s.hasActed).length,
+      seatStates: this.gameState.seats.map((s, idx) => s ? {
+        idx,
+        name: s.name,
+        isAI: s.isAI,
+        hasActed: s.hasActed
+      } : null).filter(Boolean)
+    });
+
     if (allActed) {
+      console.log('🎪 [AI] All players acted! Processing round...');
       this.processRound();
     } else {
-      console.log('🎪 Not all players acted yet:', {
-        total: this.gameState.seats.filter(s => s).length,
-        acted: this.gameState.seats.filter(s => s && s.hasActed).length
-      });
+      console.log('🎪 [AI] NOT all players acted yet. Waiting...');
     }
   }
 
