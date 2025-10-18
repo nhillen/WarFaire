@@ -23,6 +23,9 @@ type Card = {
   category: string;
   value: number;
   isGroupCard: boolean;
+  playedAtFair?: number;
+  playedAtRound?: number;
+  getEffectiveCategory?: () => string; // Method from backend Card class
 };
 
 type Seat = {
@@ -278,15 +281,26 @@ export default function WarFaireClient({
 
   // Get all player scores for popover (derived from existing data)
   const getAllCategoryScores = (categoryName: string) => {
-    const playerScores: Array<{ name: string; score: number; playerId: string }> = [];
+    const playerScores: Array<{ name: string; score: number; delta: number; playerId: string }> = [];
 
     game.seats.forEach(seat => {
       if (seat && seat.playedCards) {
-        const score = seat.playedCards
-          .filter(card => card.category === categoryName)
+        // Calculate total score for this category
+        const categoryCards = seat.playedCards.filter(card => {
+          // Handle both plain category names and cards with getEffectiveCategory method
+          const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+          return effectiveCategory === categoryName;
+        });
+
+        const score = categoryCards.reduce((sum, card) => sum + card.value, 0);
+
+        // Calculate delta (cards played in current round)
+        const delta = categoryCards
+          .filter(card => card.playedAtFair === currentFair && card.playedAtRound === currentRound)
           .reduce((sum, card) => sum + card.value, 0);
+
         if (score > 0) {
-          playerScores.push({ name: seat.name, score, playerId: seat.playerId });
+          playerScores.push({ name: seat.name, score, delta, playerId: seat.playerId });
         }
       }
     });
@@ -416,7 +430,12 @@ export default function WarFaireClient({
                                   className={`border-t border-slate-100 ${player.playerId === meId ? 'bg-purple-50' : ''}`}
                                 >
                                   <td className="px-4 py-2">{player.name}</td>
-                                  <td className="px-4 py-2 text-right font-medium">{player.score}</td>
+                                  <td className="px-4 py-2 text-right font-medium">
+                                    {player.score}
+                                    {player.delta > 0 && (
+                                      <span className="text-xs text-green-600 ml-1">+{player.delta}</span>
+                                    )}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>

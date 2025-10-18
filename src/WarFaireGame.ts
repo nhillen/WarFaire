@@ -66,6 +66,12 @@ export class WarFaireGame extends GameBase {
 
     console.log(`🎪 Fair ${this.currentFair}, Round ${this.currentRound}`);
 
+    // Update all players with current fair/round for metadata tracking
+    for (const player of this.warfaireInstance.players) {
+      player.currentFair = this.currentFair;
+      player.currentRound = this.currentRound;
+    }
+
     // Flip face-down cards
     for (const player of this.warfaireInstance.players) {
       if (player.faceDownCards.length > 0) {

@@ -9,6 +9,8 @@ export class Player {
     this.playedCards = []; // Cards played this Fair
     this.ribbons = []; // Ribbons earned { category, type: 'gold'|'silver'|'bronze', vp }
     this.totalVP = 0;
+    this.currentFair = 1; // Track current fair for metadata
+    this.currentRound = 1; // Track current round for metadata
   }
 
   addToHand(card) {
@@ -26,6 +28,9 @@ export class Player {
 
   playCardFaceUp(card) {
     if (this.removeFromHand(card)) {
+      // Add metadata for when this card was played
+      card.playedAtFair = this.currentFair;
+      card.playedAtRound = this.currentRound;
       this.playedCards.push(card);
       return true;
     }
@@ -41,8 +46,13 @@ export class Player {
   }
 
   flipFaceDownCards() {
-    // Move face-down cards to played cards
-    this.playedCards.push(...this.faceDownCards);
+    // Move face-down cards to played cards and add metadata
+    const cardsToFlip = [...this.faceDownCards];
+    cardsToFlip.forEach(card => {
+      card.playedAtFair = this.currentFair;
+      card.playedAtRound = this.currentRound;
+      this.playedCards.push(card);
+    });
     const flipped = [...this.faceDownCards];
     this.faceDownCards = [];
     return flipped;
