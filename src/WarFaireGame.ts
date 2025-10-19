@@ -20,22 +20,26 @@ export class WarFaireGame extends GameBase {
 
     console.log('🎪 Starting WarFaire game...');
 
-    // Get player names from seated players (not connectedPlayers!)
-    const seatedPlayers = this.gameState.seats.filter(s => s !== null);
-    if (seatedPlayers.length < 2) {
-      console.log('🎪 Not enough seated players to start');
-      return;
-    }
+    try {
+      // Get player names from seated players (not connectedPlayers!)
+      const seatedPlayers = this.gameState.seats.filter(s => s !== null);
+      if (seatedPlayers.length < 2) {
+        console.log('🎪 Not enough seated players to start');
+        return;
+      }
 
-    const playerNames = seatedPlayers.map(s => s.name);
+      const playerNames = seatedPlayers.map(s => s.name);
+      console.log('🎪 Creating game instance with players:', playerNames);
 
-    // Initialize WarFaire game instance
-    this.warfaireInstance = new Game(playerNames);
-    this.currentFair = 1;
-    this.currentRound = 0;
+      // Initialize WarFaire game instance
+      this.warfaireInstance = new Game(playerNames);
+      this.currentFair = 1;
+      this.currentRound = 0;
 
-    // Setup first Fair
-    this.warfaireInstance.setupFirstFair();
+      console.log('🎪 Setting up first fair...');
+      // Setup first Fair
+      this.warfaireInstance.setupFirstFair();
+      console.log('🎪 First fair setup complete');
 
     // Add WarFaire-specific fields to existing seats
     this.gameState.seats.forEach((seat, index) => {
@@ -48,14 +52,22 @@ export class WarFaireGame extends GameBase {
       }
     });
 
-    // Update game state with WarFaire-specific data
-    this.gameState.phase = 'Waiting';
-    (this.gameState as any).activeCategories = this.warfaireInstance.activeCategories;
-    (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
-    (this.gameState as any).currentFair = this.currentFair;
+      // Update game state with WarFaire-specific data
+      this.gameState.phase = 'Waiting';
+      (this.gameState as any).activeCategories = this.warfaireInstance.activeCategories;
+      (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
+      (this.gameState as any).currentFair = this.currentFair;
 
-    // Start first round
-    this.startRound();
+      console.log('🎪 Starting first round...');
+      // Start first round
+      this.startRound();
+      console.log('🎪 Game started successfully!');
+    } catch (error) {
+      console.error('🎪 ERROR starting WarFaire game:', error);
+      this.gameState.phase = 'Lobby';
+      this.broadcastGameState();
+      throw error;
+    }
   }
 
   private startRound(): void {

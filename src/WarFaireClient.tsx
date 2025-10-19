@@ -591,13 +591,29 @@ export default function WarFaireClient({
           {/* Categories Section */}
           <section>
             <h2 className="text-xl mb-4 font-semibold">Categories</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {[...activeCategories].sort((a, b) => a.group.localeCompare(b.group)).map(cat => {
-                const emoji = CATEGORY_EMOJIS[cat.name] || '';
-                const prestige = categoryPrestige[cat.name] || 0;
-                const leaders = getCategoryLeaders(cat.name);
-                const topScore = leaders[0]?.score || 0;
-                const allScores = getAllCategoryScores(cat.name);
+            {/* Group categories by group */}
+            {(() => {
+              const groupedCategories = activeCategories.reduce((acc, cat) => {
+                if (!acc[cat.group]) acc[cat.group] = [];
+                acc[cat.group].push(cat);
+                return acc;
+              }, {} as Record<string, typeof activeCategories>);
+
+              const sortedGroups = Object.keys(groupedCategories).sort();
+
+              return sortedGroups.map(groupName => (
+                <div key={groupName} className="mb-6">
+                  {/* Group Header */}
+                  <h3 className="text-base font-semibold text-slate-700 mb-3 px-2">{groupName}</h3>
+
+                  {/* Categories in this group */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {groupedCategories[groupName].map(cat => {
+                      const emoji = CATEGORY_EMOJIS[cat.name] || '';
+                      const prestige = categoryPrestige[cat.name] || 0;
+                      const leaders = getCategoryLeaders(cat.name);
+                      const topScore = leaders[0]?.score || 0;
+                      const allScores = getAllCategoryScores(cat.name);
 
                 return (
                   <div
@@ -683,7 +699,10 @@ export default function WarFaireClient({
                   </div>
                 );
               })}
-            </div>
+                  </div>
+                </div>
+              ));
+            })()}
           </section>
 
           {/* Board Section */}
