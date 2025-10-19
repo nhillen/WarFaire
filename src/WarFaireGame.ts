@@ -145,6 +145,25 @@ export class WarFaireGame extends GameBase {
       case 'select_category':
         // Handle group card category selection
         break;
+      case 'continue_from_summary':
+        if (this.gameState.phase.startsWith('FairSummary')) {
+          // Check if game is complete (3 Fairs) or start next Fair
+          if (this.currentFair >= 3) {
+            this.endGame();
+          } else if (this.warfaireInstance) {
+            console.log(`🎪 Continuing to Fair ${this.currentFair + 1}...`);
+            this.warfaireInstance.prepareNextFair();
+            this.currentFair++;
+            this.currentRound = 0;
+            this.startRound();
+          }
+        }
+        break;
+      case 'return_to_lobby':
+        if (this.gameState.phase === 'GameEnd') {
+          this.returnToLobby();
+        }
+        break;
     }
   }
 
@@ -325,6 +344,8 @@ export class WarFaireGame extends GameBase {
   private endFair(): void {
     if (!this.warfaireInstance || !this.gameState) return;
 
+    console.log(`🎪 Ending Fair ${this.currentFair}...`);
+
     // Score the fair
     const results = scoreFair(
       this.warfaireInstance.players,
@@ -342,21 +363,41 @@ export class WarFaireGame extends GameBase {
 
     // Sync final state
     this.syncWarFaireStateToSeats();
-    this.broadcastGameState();
 
-    // Check if game is complete (3 Fairs) or start next Fair
-    if (this.currentFair >= 3) {
-      this.endGame();
-    } else {
-      this.warfaireInstance.prepareNextFair();
-      this.currentFair++;
-      this.currentRound = 0;
-      this.startRound();
-    }
+    // Store Fair results in game state for display
+    (this.gameState as any).fairResults = results;
+    (this.gameState as any).lastCompletedFair = this.currentFair;
+
+    // Transition to Fair Summary phase
+    this.gameState.phase = `FairSummary${this.currentFair}`;
+    console.log(`🎪 Entering FairSummary${this.currentFair} phase`);
+
+    this.broadcastGameState();
   }
 
   private endGame(): void {
+    if (!this.gameState) return;
+
+    console.log(`🎪 Ending game after 3 Fairs...`);
+
     const winners = this.evaluateWinners();
+
+    // Store winners for display
+    (this.gameState as any).gameWinners = winners;
+
+    // Transition to GameEnd phase
+    this.gameState.phase = 'GameEnd';
+    console.log(`🎪 Entering GameEnd phase`);
+
+    this.broadcastGameState();
+  }
+
+  private returnToLobby(): void {
+    if (!this.gameState) return;
+
+    console.log(`🎪 Returning to lobby...`);
+
+    const winners = (this.gameState as any).gameWinners || this.evaluateWinners();
 
     // Distribute winnings to table stacks
     this.payoutWinners(winners);

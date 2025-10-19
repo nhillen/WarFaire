@@ -278,6 +278,145 @@ export default function WarFaireClient({
     );
   }
 
+  // ===== FAIR SUMMARY VIEW =====
+  if (game.phase.startsWith('FairSummary')) {
+    const fairResults = (game as any).fairResults || [];
+    const fairNumber = (game as any).lastCompletedFair || 1;
+
+    // Sort players by VP for display
+    const sortedSeats = [...game.seats]
+      .filter(s => s)
+      .sort((a, b) => (b.totalVP || 0) - (a.totalVP || 0));
+
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="max-w-2xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-center mb-6">Fair {fairNumber} Complete!</h1>
+
+          {/* Fair Results - Ribbons Won */}
+          {fairResults && fairResults.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Ribbons Won</h2>
+              <div className="space-y-2">
+                {fairResults.map((result: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{CATEGORY_EMOJIS[result.category] || '🎪'}</span>
+                      <div>
+                        <div className="font-semibold">{result.category}</div>
+                        <div className="text-sm text-slate-600">{result.winner}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-purple-600">+{result.vp} VP</div>
+                      <div className="text-xs text-slate-500">{result.score} points</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Current Standings */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Current Standings</h2>
+            <div className="space-y-2">
+              {sortedSeats.map((seat: any, idx: number) => (
+                <div
+                  key={seat.playerId}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    seat.playerId === meId
+                      ? 'bg-blue-50 border-blue-300'
+                      : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-slate-400">#{idx + 1}</span>
+                    <span className="text-lg">{seat.isAI ? '🤖' : '👤'}</span>
+                    <span className="font-medium">{seat.name}</span>
+                  </div>
+                  <div className="text-xl font-bold text-purple-600">{seat.totalVP || 0} VP</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Continue Button */}
+          <button
+            onClick={() => onPlayerAction('continue_from_summary')}
+            className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-lg"
+          >
+            {fairNumber >= 3 ? 'View Final Results' : `Continue to Fair ${fairNumber + 1}`}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== GAME END VIEW =====
+  if (game.phase === 'GameEnd') {
+    const gameWinners = (game as any).gameWinners || [];
+    const winner = gameWinners[0];
+
+    // Sort players by final VP
+    const sortedSeats = [...game.seats]
+      .filter(s => s)
+      .sort((a, b) => (b.totalVP || 0) - (a.totalVP || 0));
+
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="max-w-2xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-2">Game Over!</h1>
+            {winner && (
+              <>
+                <p className="text-2xl text-purple-600 font-semibold">{winner.name} Wins!</p>
+                <p className="text-lg text-slate-600 mt-2">{winner.payout / 10} Victory Points</p>
+              </>
+            )}
+          </div>
+
+          {/* Final Standings */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Final Standings</h2>
+            <div className="space-y-2">
+              {sortedSeats.map((seat: any, idx: number) => {
+                const isWinner = idx === 0;
+                return (
+                  <div
+                    key={seat.playerId}
+                    className={`flex items-center justify-between p-4 rounded-lg border ${
+                      isWinner
+                        ? 'bg-yellow-50 border-yellow-400 ring-2 ring-yellow-400'
+                        : seat.playerId === meId
+                        ? 'bg-blue-50 border-blue-300'
+                        : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold">{isWinner ? '🏆' : `#${idx + 1}`}</span>
+                      <span className="text-lg">{seat.isAI ? '🤖' : '👤'}</span>
+                      <span className="font-medium text-lg">{seat.name}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-purple-600">{seat.totalVP || 0} VP</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Return to Lobby Button */}
+          <button
+            onClick={() => onPlayerAction('return_to_lobby')}
+            className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-lg"
+          >
+            Return to Lobby
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ===== DERIVED DISPLAY DATA =====
   const hasActed = mySeat?.hasActed || false;
   const waitingForOthers = hasActed;
