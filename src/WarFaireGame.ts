@@ -169,14 +169,8 @@ export class WarFaireGame extends GameBase {
     // Broadcast updated state so player sees "waiting for others"
     this.broadcastGameState();
 
-    // Check if all players have acted
-    const nonFoldedSeats = this.gameState!.seats.filter(s => s && !s.hasFolded);
-    console.log(`🎪 Pending actions: ${this.pendingActions.size} / ${nonFoldedSeats.length} players`);
-
-    if (this.pendingActions.size === nonFoldedSeats.length) {
-      console.log('🎪 All players acted, processing round...');
-      this.processRound();
-    }
+    // Trigger AI turns after human player acts
+    setTimeout(() => this.handleAITurns(), 500);
   }
 
   private handleAITurns(): void {
