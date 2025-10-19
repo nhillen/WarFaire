@@ -92,36 +92,23 @@ export default function WarFaireClient({
   const currentFair = game?.currentFair || 1;
   const currentRound = game?.currentRound || 1;
 
-  // ===== EXISTING AUTO-SIT LOGIC - DO NOT MODIFY =====
-  useEffect(() => {
-    console.log(`🪑 Auto-sit check:`, {
-      hasGame: !!game,
-      isSeated,
-      phase: game?.phase,
-      meId,
-      seatsCount: game?.seats?.length,
-      seats: game?.seats?.map(s => s ? { playerId: s.playerId, name: s.name } : null)
-    });
-
-    if (game && !isSeated && game.phase === 'Lobby') {
-      const alreadySeated = game.seats.some(s => s && s.playerId === meId);
-      console.log(`🪑 Already seated check:`, alreadySeated, 'meId:', meId);
-
-      if (!alreadySeated) {
-        const emptySeatIndex = game.seats.findIndex(s => !s || !s.playerId);
-        console.log(`🪑 Empty seat found at index:`, emptySeatIndex);
-
-        if (emptySeatIndex !== -1) {
-          console.log(`🪑 Auto-sitting player ${meId} at seat ${emptySeatIndex}`);
-          onSitDown(emptySeatIndex, 1000);
-        } else {
-          console.log(`🪑 No empty seats available`);
-        }
-      } else {
-        console.log(`🪑 Player ${meId} already seated, not auto-sitting again`);
-      }
+  // ===== SEAT SELECTION HANDLER =====
+  const handleSeatClick = (seatIndex: number, seat: any) => {
+    // If seat is occupied, do nothing
+    if (seat && seat.playerId) {
+      return;
     }
-  }, [game, isSeated, meId]);
+
+    // If not seated, sit down
+    if (!isSeated) {
+      console.log(`🪑 Player ${meId} sitting at seat ${seatIndex}`);
+      onSitDown(seatIndex, 1000);
+    } else {
+      // If already seated, add AI to this seat
+      console.log(`🪑 Adding AI to seat ${seatIndex}`);
+      onPlayerAction('add_ai', { count: 1, seatIndex });
+    }
+  };
 
   // ===== EXISTING RESET LOGIC - DO NOT MODIFY =====
   useEffect(() => {
@@ -194,7 +181,13 @@ export default function WarFaireClient({
         <div className="max-w-4xl w-full">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">War Faire</h2>
-            <p className="text-sm text-slate-600">{seatedPlayers.length} / 10 seated</p>
+            <p className="text-sm text-slate-600 mb-2">{seatedPlayers.length} / 10 seated</p>
+            {!isSeated && (
+              <p className="text-xs text-purple-600 font-medium">Click an empty seat to join</p>
+            )}
+            {isSeated && (
+              <p className="text-xs text-slate-500">Click empty seats to add AI players</p>
+            )}
           </div>
 
           <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4">
@@ -202,10 +195,14 @@ export default function WarFaireClient({
               {game.seats.map((seat: any, index: number) => (
                 <div
                   key={index}
+                  onClick={() => handleSeatClick(index, seat)}
                   className={`
-                    border rounded p-2 text-center text-xs
-                    ${seat && seat.playerId ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-slate-50'}
-                    ${seat && seat.playerId === meId ? 'ring-1 ring-blue-500' : ''}
+                    border rounded p-2 text-center text-xs transition-all
+                    ${seat && seat.playerId
+                      ? 'border-green-500 bg-green-50 cursor-default'
+                      : 'border-slate-300 bg-slate-50 cursor-pointer hover:border-purple-500 hover:bg-purple-50 hover:shadow-md'
+                    }
+                    ${seat && seat.playerId === meId ? 'ring-2 ring-blue-500' : ''}
                   `}
                 >
                   {seat && seat.playerId ? (
@@ -215,8 +212,10 @@ export default function WarFaireClient({
                     </>
                   ) : (
                     <>
-                      <div className="text-lg mb-1 text-slate-300">💺</div>
-                      <div className="text-slate-400">{index + 1}</div>
+                      <div className="text-lg mb-1 text-slate-400">💺</div>
+                      <div className="text-slate-400 text-[10px]">
+                        {isSeated ? 'Add AI' : 'Sit Here'}
+                      </div>
                     </>
                   )}
                 </div>
