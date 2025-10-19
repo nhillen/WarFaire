@@ -278,6 +278,55 @@ export default function WarFaireClient({
     );
   }
 
+  // ===== ROUND SUMMARY VIEW =====
+  if (game.phase.startsWith('RoundSummary')) {
+    const roundPlays = (game as any).roundPlays || [];
+    const roundNumber = (game as any).completedRound || 1;
+
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="max-w-2xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-center mb-6">Round {roundNumber} Complete!</h1>
+
+          {/* Cards Played This Round */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Cards Played (Face-Up)</h2>
+            <div className="space-y-2">
+              {roundPlays.map((play: any) => (
+                <div
+                  key={play.playerId}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    play.playerId === meId
+                      ? 'bg-blue-50 border-blue-300'
+                      : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{play.isAI ? '🤖' : '👤'}</span>
+                    <span className="font-medium">{play.playerName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-purple-100 border border-purple-300 rounded-lg">
+                    <span className="text-lg">{CATEGORY_EMOJIS[play.category] || '🎪'}</span>
+                    <span className="font-semibold">{play.category}</span>
+                    <span className="text-lg font-bold text-purple-600">{play.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Continue Button */}
+          <button
+            onClick={() => onPlayerAction('continue_from_summary')}
+            className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-lg"
+          >
+            {roundNumber >= 3 ? 'View Fair Results' : `Continue to Round ${roundNumber + 1}`}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ===== FAIR SUMMARY VIEW =====
   if (game.phase.startsWith('FairSummary')) {
     const fairResults = (game as any).fairResults || [];
@@ -417,6 +466,23 @@ export default function WarFaireClient({
     );
   }
 
+  // ===== UNSEATED PLAYER VIEW (not in lobby and not seated) =====
+  if (!isSeated && game.phase !== 'Lobby') {
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="max-w-md w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Game in Progress</h2>
+          <p className="text-slate-600 mb-6">
+            A game is currently underway. Please wait for the current game to finish before joining.
+          </p>
+          <div className="text-sm text-slate-500">
+            Phase: {game.phase}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ===== DERIVED DISPLAY DATA =====
   const hasActed = mySeat?.hasActed || false;
   const waitingForOthers = hasActed;
@@ -526,7 +592,7 @@ export default function WarFaireClient({
           <section>
             <h2 className="text-xl mb-4 font-semibold">Categories</h2>
             <div className="grid grid-cols-2 gap-4">
-              {activeCategories.map(cat => {
+              {[...activeCategories].sort((a, b) => a.group.localeCompare(b.group)).map(cat => {
                 const emoji = CATEGORY_EMOJIS[cat.name] || '';
                 const prestige = categoryPrestige[cat.name] || 0;
                 const leaders = getCategoryLeaders(cat.name);
@@ -575,33 +641,33 @@ export default function WarFaireClient({
                     {/* Popover on hover */}
                     {hoveredCategory === cat.name && allScores.length > 0 && (
                       <div
-                        className="absolute z-30 mt-2 w-72 bg-white border border-slate-300 rounded-lg shadow-lg overflow-hidden"
-                        style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
+                        className="absolute z-30 mt-2 w-72 bg-white border-2 border-slate-400 rounded-lg shadow-2xl overflow-hidden"
+                        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
                         onMouseEnter={() => setHoveredCategory(cat.name)}
                         onMouseLeave={() => setHoveredCategory(null)}
                       >
-                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                        <div className="px-4 py-3 bg-slate-100 border-b-2 border-slate-300">
                           <div className="flex items-center gap-2">
                             <span className="text-xl">{emoji}</span>
-                            <span className="text-sm font-semibold">{cat.name}</span>
+                            <span className="text-sm font-semibold text-slate-900">{cat.name}</span>
                           </div>
                         </div>
-                        <div className="max-h-64 overflow-y-auto">
+                        <div className="max-h-64 overflow-y-auto bg-white">
                           <table className="w-full text-sm">
-                            <thead className="bg-slate-50 sticky top-0">
+                            <thead className="bg-slate-100 sticky top-0 border-b-2 border-slate-200">
                               <tr>
-                                <th className="text-left px-4 py-2 font-medium text-slate-600">Player</th>
-                                <th className="text-right px-4 py-2 font-medium text-slate-600">Points</th>
+                                <th className="text-left px-4 py-2 font-medium text-slate-700">Player</th>
+                                <th className="text-right px-4 py-2 font-medium text-slate-700">Points</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white">
                               {allScores.map((player, idx) => (
                                 <tr
                                   key={player.playerId}
-                                  className={`border-t border-slate-100 ${player.playerId === meId ? 'bg-purple-50' : 'bg-white'}`}
+                                  className={`border-t border-slate-200 ${player.playerId === meId ? 'bg-purple-50' : 'bg-white'}`}
                                 >
-                                  <td className="px-4 py-2">{player.name}</td>
-                                  <td className="px-4 py-2 text-right font-medium">
+                                  <td className="px-4 py-2 text-slate-900">{player.name}</td>
+                                  <td className="px-4 py-2 text-right font-medium text-slate-900">
                                     {player.score}
                                     {player.delta > 0 && (
                                       <span className="text-xs text-green-600 ml-1">+{player.delta}</span>

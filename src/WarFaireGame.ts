@@ -146,7 +146,9 @@ export class WarFaireGame extends GameBase {
         // Handle group card category selection
         break;
       case 'continue_from_summary':
-        if (this.gameState.phase.startsWith('FairSummary')) {
+        if (this.gameState.phase.startsWith('RoundSummary')) {
+          this.continueFromRoundSummary();
+        } else if (this.gameState.phase.startsWith('FairSummary')) {
           // Check if game is complete (3 Fairs) or start next Fair
           if (this.currentFair >= 3) {
             this.endGame();
@@ -327,9 +329,46 @@ export class WarFaireGame extends GameBase {
 
     this.pendingActions.clear();
 
+    // Sync state to show face-up cards
+    this.syncWarFaireStateToSeats();
+
+    // Store round summary data for display
+    const roundPlays: any[] = [];
+    this.gameState.seats.forEach((seat, idx) => {
+      if (seat && this.warfaireInstance) {
+        const player = this.warfaireInstance.players[idx];
+        const faceUpCard = player.faceUpCards.length > 0
+          ? player.faceUpCards[player.faceUpCards.length - 1]
+          : null;
+
+        if (faceUpCard) {
+          roundPlays.push({
+            playerName: seat.name,
+            playerId: seat.playerId,
+            isAI: seat.isAI,
+            category: faceUpCard.getEffectiveCategory ? faceUpCard.getEffectiveCategory() : faceUpCard.category,
+            value: faceUpCard.value
+          });
+        }
+      }
+    });
+
+    (this.gameState as any).roundPlays = roundPlays;
+    (this.gameState as any).completedRound = this.currentRound;
+
     // Reset hasActed flags
     console.log(`🎪 Resetting hasActed flags for all seats`);
     this.gameState.seats.forEach(s => { if (s) s.hasActed = false; });
+
+    // Transition to RoundSummary phase
+    this.gameState.phase = `RoundSummary${this.currentFair}_${this.currentRound}`;
+    console.log(`🎪 Entering RoundSummary phase`);
+
+    this.broadcastGameState();
+  }
+
+  private continueFromRoundSummary(): void {
+    if (!this.gameState) return;
 
     // Check if Fair is complete (3 rounds)
     if (this.currentRound >= 3) {
