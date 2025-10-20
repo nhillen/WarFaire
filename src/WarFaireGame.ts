@@ -167,6 +167,8 @@ export class WarFaireGame extends GameBase {
   private syncWarFaireStateToSeats(): void {
     if (!this.warfaireInstance || !this.gameState) return;
 
+    console.log(`🎪 [SYNC] Syncing state - Fair ${this.currentFair}, Round ${this.currentRound}`);
+
     this.warfaireInstance.players.forEach((wfPlayer: any, index: number) => {
       const seat = this.gameState!.seats[index];
       if (seat) {
@@ -182,6 +184,23 @@ export class WarFaireGame extends GameBase {
         // Add current round's face-up card (last card in playedCards if any this round)
         const recentCards = wfPlayer.playedCards.slice(-1);
         (seat as any).currentFaceUpCard = recentCards.length > 0 ? recentCards[0] : null;
+
+        // Log player state for debugging
+        console.log(`🎪 [SYNC] Player ${seat.name} (${index}):`, {
+          handSize: seat.hand.length,
+          playedCardsCount: seat.playedCards.length,
+          playedCards: seat.playedCards.map((c: any) => ({
+            category: c.category || c.getEffectiveCategory?.(),
+            value: c.value,
+            fair: c.playedAtFair,
+            round: c.playedAtRound
+          })),
+          currentFaceUpCard: (seat as any).currentFaceUpCard ? {
+            category: (seat as any).currentFaceUpCard.category,
+            value: (seat as any).currentFaceUpCard.value
+          } : null,
+          totalVP: seat.totalVP
+        });
       }
     });
 
@@ -190,6 +209,9 @@ export class WarFaireGame extends GameBase {
     (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
     (this.gameState as any).currentFair = this.currentFair;
     (this.gameState as any).currentRound = this.currentRound;
+
+    console.log(`🎪 [SYNC] Active categories:`, this.warfaireInstance.activeCategories.map((c: any) => c.name));
+    console.log(`🎪 [SYNC] Category prestige:`, this.warfaireInstance.categoryPrestige);
   }
 
   handlePlayerAction(playerId: string, action: string, data?: any): void {

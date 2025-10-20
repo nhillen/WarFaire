@@ -9,11 +9,13 @@ export const CARD_ART: Record<string, string> = {
   tomatoes: "/assets/card_art/tomatoes.png",
   corn: "/assets/card_art/corn.png",
   pies: "/assets/card_art/pies.png",
+  cakes: "/assets/card_art/cakes.png",
   breads: "/assets/card_art/bread.png",
   cookies: "/assets/card_art/cookies.png",
   chickens: "/assets/card_art/chickens.png",
   pigs: "/assets/card_art/pigs.png",
-  cows: "/assets/card_art/cows.png"
+  cows: "/assets/card_art/cows.png",
+  goats: "/assets/card_art/goats.png"
 };
 
 /**
