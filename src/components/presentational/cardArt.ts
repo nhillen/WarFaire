@@ -9,7 +9,7 @@ export const CARD_ART: Record<string, string> = {
   tomatoes: "/assets/card_art/tomatoes.png",
   corn: "/assets/card_art/corn.png",
   pies: "/assets/card_art/pies.png",
-  cakes: "/assets/card_art/cakes.png",
+  cakes: "/assets/card_art/cake.png",
   breads: "/assets/card_art/bread.png",
   cookies: "/assets/card_art/cookies.png",
   chickens: "/assets/card_art/chickens.png",
