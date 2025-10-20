@@ -4,6 +4,7 @@ import { CardBack } from './components/presentational/CardBack';
 import { MiniCardChip } from './components/presentational/MiniCardChip';
 import { LeaderChip } from './components/presentational/LeaderChip';
 import { getCardArt } from './components/presentational/cardArt';
+import './styles/presentation.css';
 
 // Category emojis (kept for summary/results screens, removed from main UI)
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -572,17 +573,7 @@ export default function WarFaireClient({
 
   // ===== MAIN GAME VIEW - LAYOUT ONLY, PRESERVE ALL LOGIC =====
   return (
-    <div
-      className="h-full flex flex-col"
-      style={{
-        background: 'linear-gradient(to bottom, rgb(248, 250, 252), rgb(241, 245, 249))',
-        backgroundImage: 'url("/assets/card_art/paper_grain.png")',
-        backgroundBlendMode: 'overlay',
-        opacity: 1,
-        backgroundSize: 'auto',
-        backgroundRepeat: 'repeat',
-      }}
-    >
+    <div className="app-shell h-full flex flex-col">
       {/* Top bar - UNCHANGED as per spec */}
       <div className="h-11 bg-white border-b border-slate-200 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -601,11 +592,11 @@ export default function WarFaireClient({
 
       {/* Main content - max-width 1280px, stacked sections */}
       <div className="flex-1 overflow-auto pb-24">
-        <div className="max-w-[1280px] mx-auto px-4 py-6 space-y-6">
+        <div className="page">
 
           {/* Categories Section */}
-          <section>
-            <h2 className="text-xl mb-4 font-semibold">Categories</h2>
+          <section className="section-categories">
+            <h2 className="text-xl mb-4 font-semibold text-white">Categories</h2>
             {/* Group categories by group */}
             {(() => {
               const groupedCategories = activeCategories.reduce((acc, cat) => {
@@ -619,10 +610,10 @@ export default function WarFaireClient({
               return sortedGroups.map(groupName => (
                 <div key={groupName} className="mb-6">
                   {/* Group Header */}
-                  <h3 className="text-base font-semibold text-slate-700 mb-3 px-2">{groupName}</h3>
+                  <h3 className="text-base font-semibold text-white mb-3 px-2">{groupName}</h3>
 
                   {/* Categories in this group */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="category-grid">
                     {groupedCategories[groupName].map(cat => {
                       const emoji = CATEGORY_EMOJIS[cat.name] || '';
                       const prestige = categoryPrestige[cat.name] || 0;
@@ -636,41 +627,31 @@ export default function WarFaireClient({
                     className="relative"
                   >
                     <div
-                      className="bg-white border border-slate-300 rounded-lg px-4 py-2 flex items-center gap-3 cursor-default hover:border-slate-400 transition-colors"
-                      style={{ height: '56px' }}
+                      className="category-tile"
                       onMouseEnter={() => setHoveredCategory(cat.name)}
                       onMouseLeave={() => setHoveredCategory(null)}
                       onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                     >
-                      {/* Left: Card art icon (24px) */}
-                      <img
-                        src={getCardArt(cat.name.toLowerCase())}
-                        alt=""
-                        width="24"
-                        height="24"
-                        style={{ objectFit: 'contain' }}
-                      />
-
-                      {/* Category name and group */}
-                      <div className="flex-1 min-w-0">
-                        <div style={{ fontSize: '14px', lineHeight: '20px' }} className="font-medium text-slate-900">
-                          {cat.name}
-                        </div>
-                        <div style={{ fontSize: '12px', lineHeight: '16px' }} className="text-slate-600">
-                          {cat.group}
+                      <div className="left">
+                        <img className="icon-24" src={getCardArt(cat.name.toLowerCase())} alt="" />
+                        <div>
+                          <div className="name">{cat.name}</div>
+                          <div className="sub">{cat.group}</div>
                         </div>
                       </div>
-
-                      {/* Right: LeaderChip + Delta */}
-                      {leaders.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <LeaderChip
-                            avatarText={leaders[0].name.charAt(0)}
-                            points={leaders[0].score}
-                            delta={leaders.length > 1 ? leaders[0].score - leaders[1].score : undefined}
-                          />
-                        </div>
-                      )}
+                      <div className="right">
+                        {leaders.length > 0 && (
+                          <>
+                            <div className="leader-chip">
+                              <div className="avatar">{leaders[0].name.charAt(0)}</div>
+                              <div className="points">{leaders[0].score}</div>
+                            </div>
+                            {leaders.length > 1 && (
+                              <div className="sub">+{leaders[0].score - leaders[1].score}</div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     {/* Popover on hover - follows mouse */}
@@ -738,9 +719,9 @@ export default function WarFaireClient({
           </section>
 
           {/* Board Section */}
-          <section>
+          <section className="section-board">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Board</h2>
+              <h2 className="text-xl font-semibold text-white">Board</h2>
               <div className="flex gap-2">
                 <button
                   onClick={() => setBoardTab('all')}
@@ -762,28 +743,24 @@ export default function WarFaireClient({
                 </button>
               </div>
             </div>
-            <div className="bg-white border border-slate-300 rounded-lg p-4 space-y-2">
+            <div className="panel board-rows">
               {boardPlayers.map((seat: any) => {
                 const card = seat.currentFaceUpCard;
 
                 return (
-                  <div
-                    key={seat.playerId}
-                    className={`flex items-center gap-3 p-2 rounded border ${
-                      seat.playerId === meId ? 'bg-purple-50 border-purple-300' : 'border-slate-200'
-                    }`}
-                    style={{ height: '40px' }}
-                  >
-                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs">
+                  <div key={seat.playerId} className="row">
+                    <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-xs font-bold text-white">
                       {seat.name.charAt(0)}
                     </div>
-                    <span className="flex-1 text-sm font-medium">{seat.name}</span>
-                    {card && (
-                      <MiniCardChip
-                        categoryId={card.category.toLowerCase()}
-                        value={card.value}
-                      />
-                    )}
+                    <span className="text-sm font-medium text-white">{seat.name}</span>
+                    <div className="chips">
+                      {card && (
+                        <MiniCardChip
+                          categoryId={card.category.toLowerCase()}
+                          value={card.value}
+                        />
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -791,8 +768,8 @@ export default function WarFaireClient({
           </section>
 
           {/* Hand Section */}
-          <section>
-            <div className="bg-white border border-slate-300 rounded-lg overflow-hidden">
+          <section className="section-hand">
+            <div className="panel overflow-hidden">
               <div className="border-b border-slate-200 px-4 pt-3 pb-0 flex gap-4">
                 <button
                   onClick={() => setActiveTab('hand')}
@@ -819,7 +796,7 @@ export default function WarFaireClient({
                   ) : myHand.length === 0 ? (
                     <p className="text-center py-6 text-sm text-slate-500">No cards</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="hand-grid">
                       {myHand.slice(0, 3).map((card, i) => {
                         const isSelected = slotA?.index === i || slotB?.index === i;
                         // Find the group for this category
@@ -828,10 +805,10 @@ export default function WarFaireClient({
                           <CardShell
                             key={i}
                             categoryId={card.category.toLowerCase()}
-                            categoryName={card.category}
-                            groupName={categoryInfo?.group}
+                            name={card.category}
+                            group={categoryInfo?.group}
                             value={card.value}
-                            isSelected={isSelected}
+                            selected={isSelected}
                             onClick={() => selectCard(card, i)}
                           />
                         );
@@ -867,50 +844,40 @@ export default function WarFaireClient({
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-300 shadow-lg px-4 py-3 z-20">
           <div className="max-w-[1280px] mx-auto flex items-center gap-4">
             {/* Slot A */}
-            <div className="border border-dashed border-slate-300 rounded-lg p-3 flex items-center justify-center" style={{ width: '120px', height: '100px' }}>
-              {slotA ? (
-                !isFaceUp ? (
-                  <CardBack label="next fair" className="w-full h-full" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                    <img
-                      src={getCardArt(slotA.card.category.toLowerCase())}
-                      alt=""
-                      width="40"
-                      height="40"
-                      style={{ objectFit: 'contain' }}
-                    />
-                    <div className="text-xs font-medium text-center">{slotA.card.category}</div>
-                    <div className="text-sm font-bold text-purple-600">{slotA.card.value}</div>
-                  </div>
-                )
+            {slotA ? (
+              !isFaceUp ? (
+                <div className="slot-mini">
+                  <img src="/assets/card_art/card_back.png" alt="Card back" />
+                  <div className="next-chip">next fair</div>
+                </div>
               ) : (
-                <span className="text-sm text-slate-400">Slot A</span>
-              )}
-            </div>
+                <div className="slot-mini">
+                  <img src={getCardArt(slotA.card.category.toLowerCase())} alt="" />
+                </div>
+              )
+            ) : (
+              <div className="slot-mini">
+                <span className="text-xs text-slate-400">Slot A</span>
+              </div>
+            )}
 
             {/* Slot B */}
-            <div className="border border-dashed border-slate-300 rounded-lg p-3 flex items-center justify-center" style={{ width: '120px', height: '100px' }}>
-              {slotB ? (
-                isFaceUp ? (
-                  <CardBack label="next fair" className="w-full h-full" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                    <img
-                      src={getCardArt(slotB.card.category.toLowerCase())}
-                      alt=""
-                      width="40"
-                      height="40"
-                      style={{ objectFit: 'contain' }}
-                    />
-                    <div className="text-xs font-medium text-center">{slotB.card.category}</div>
-                    <div className="text-sm font-bold text-purple-600">{slotB.card.value}</div>
-                  </div>
-                )
+            {slotB ? (
+              isFaceUp ? (
+                <div className="slot-mini">
+                  <img src="/assets/card_art/card_back.png" alt="Card back" />
+                  <div className="next-chip">next fair</div>
+                </div>
               ) : (
-                <span className="text-sm text-slate-400">Slot B</span>
-              )}
-            </div>
+                <div className="slot-mini">
+                  <img src={getCardArt(slotB.card.category.toLowerCase())} alt="" />
+                </div>
+              )
+            ) : (
+              <div className="slot-mini">
+                <span className="text-xs text-slate-400">Slot B</span>
+              </div>
+            )}
 
             {/* Face-Up Toggle */}
             <button
