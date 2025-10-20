@@ -472,15 +472,23 @@ export class WarFaireGame extends GameBase {
           ? player.faceUpCards[player.faceUpCards.length - 1]
           : null;
 
-        if (faceUpCard) {
-          roundPlays.push({
-            playerName: seat.name,
-            playerId: seat.playerId,
-            isAI: seat.isAI,
+        const faceDownCard = player.faceDownCards && player.faceDownCards.length > 0
+          ? player.faceDownCards[player.faceDownCards.length - 1]
+          : null;
+
+        roundPlays.push({
+          playerName: seat.name,
+          playerId: seat.playerId,
+          isAI: seat.isAI,
+          faceUpCard: faceUpCard ? {
             category: faceUpCard.getEffectiveCategory ? faceUpCard.getEffectiveCategory() : faceUpCard.category,
             value: faceUpCard.value
-          });
-        }
+          } : null,
+          faceDownCard: faceDownCard ? {
+            category: faceDownCard.getEffectiveCategory ? faceDownCard.getEffectiveCategory() : faceDownCard.category,
+            value: faceDownCard.value
+          } : null
+        });
       }
     });
 

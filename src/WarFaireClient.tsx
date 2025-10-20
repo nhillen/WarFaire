@@ -290,30 +290,55 @@ export default function WarFaireClient({
 
     return (
       <div className="h-full flex items-center justify-center bg-slate-50">
-        <div className="max-w-2xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
+        <div className="max-w-4xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
           <h1 className="text-3xl font-bold text-center mb-6">Round {roundNumber} Complete!</h1>
 
           {/* Cards Played This Round */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Cards Played (Face-Up)</h2>
-            <div className="space-y-2">
+            <h2 className="text-xl font-semibold mb-4">Cards Played</h2>
+            <div className="space-y-3">
               {roundPlays.map((play: any) => (
                 <div
                   key={play.playerId}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                  className={`p-4 rounded-lg border ${
                     play.playerId === meId
                       ? 'bg-blue-50 border-blue-300'
                       : 'bg-slate-50 border-slate-200'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 mb-3">
                     <span className="text-lg">{play.isAI ? '🤖' : '👤'}</span>
-                    <span className="font-medium">{play.playerName}</span>
+                    <span className="font-semibold text-lg">{play.playerName}</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-purple-100 border border-purple-300 rounded-lg">
-                    <span className="text-lg">{CATEGORY_EMOJIS[play.category] || '🎪'}</span>
-                    <span className="font-semibold">{play.category}</span>
-                    <span className="text-lg font-bold text-purple-600">{play.value}</span>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Face-Up Card */}
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500 mb-1">FACE-UP (Scoring)</div>
+                      {play.faceUpCard ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-green-100 border border-green-400 rounded-lg">
+                          <span className="text-lg">{CATEGORY_EMOJIS[play.faceUpCard.category] || '🎪'}</span>
+                          <span className="font-semibold">{play.faceUpCard.category}</span>
+                          <span className="text-lg font-bold text-green-700 ml-auto">{play.faceUpCard.value}</span>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-slate-400 italic">No card played</div>
+                      )}
+                    </div>
+
+                    {/* Face-Down Card */}
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500 mb-1">FACE-DOWN (Future)</div>
+                      {play.faceDownCard ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-200 border border-slate-400 rounded-lg">
+                          <span className="text-lg">{CATEGORY_EMOJIS[play.faceDownCard.category] || '🎪'}</span>
+                          <span className="font-semibold">{play.faceDownCard.category}</span>
+                          <span className="text-lg font-bold text-slate-700 ml-auto">{play.faceDownCard.value}</span>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-slate-400 italic">No card played</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -342,28 +367,47 @@ export default function WarFaireClient({
       .filter(s => s)
       .sort((a, b) => (b.totalVP || 0) - (a.totalVP || 0));
 
+    // Medal emojis for top 3
+    const getMedalEmoji = (rank: number) => {
+      if (rank === 1) return '🥇';
+      if (rank === 2) return '🥈';
+      if (rank === 3) return '🥉';
+      return '';
+    };
+
     return (
-      <div className="h-full flex items-center justify-center bg-slate-50">
-        <div className="max-w-2xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-6">Fair {fairNumber} Complete!</h1>
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="max-w-3xl w-full bg-white rounded-lg border-2 border-purple-300 shadow-2xl p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-purple-900 mb-2">🎪 Fair {fairNumber} Complete! 🎪</h1>
+            <p className="text-slate-600">Category winners and ribbons awarded</p>
+          </div>
 
           {/* Fair Results - Ribbons Won */}
           {fairResults && fairResults.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Ribbons Won</h2>
-              <div className="space-y-2">
+              <h2 className="text-2xl font-bold mb-4 text-purple-800">🏆 Ribbons Awarded</h2>
+              <div className="grid gap-3">
                 {fairResults.map((result: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{CATEGORY_EMOJIS[result.category] || '🎪'}</span>
-                      <div>
-                        <div className="font-semibold">{result.category}</div>
-                        <div className="text-sm text-slate-600">{result.winner}</div>
+                  <div
+                    key={idx}
+                    className="relative overflow-hidden bg-gradient-to-r from-purple-100 to-purple-50 border-2 border-purple-400 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="text-4xl">{CATEGORY_EMOJIS[result.category] || '🎪'}</div>
+                        <div>
+                          <div className="text-lg font-bold text-purple-900">{result.category}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">🏅</span>
+                            <span className="text-base font-semibold text-slate-700">{result.winner}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-purple-600">+{result.vp} VP</div>
-                      <div className="text-xs text-slate-500">{result.score} points</div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-purple-700">+{result.vp} VP</div>
+                        <div className="text-sm text-slate-600 font-medium">{result.score} points</div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -373,34 +417,43 @@ export default function WarFaireClient({
 
           {/* Current Standings */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Current Standings</h2>
+            <h2 className="text-2xl font-bold mb-4 text-purple-800">📊 Current Standings</h2>
             <div className="space-y-2">
-              {sortedSeats.map((seat: any, idx: number) => (
-                <div
-                  key={seat.playerId}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    seat.playerId === meId
-                      ? 'bg-blue-50 border-blue-300'
-                      : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-slate-400">#{idx + 1}</span>
-                    <span className="text-lg">{seat.isAI ? '🤖' : '👤'}</span>
-                    <span className="font-medium">{seat.name}</span>
+              {sortedSeats.map((seat: any, idx: number) => {
+                const medal = getMedalEmoji(idx + 1);
+                const isLeader = idx === 0;
+                return (
+                  <div
+                    key={seat.playerId}
+                    className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                      seat.playerId === meId
+                        ? 'bg-blue-100 border-blue-400 shadow-md'
+                        : isLeader
+                        ? 'bg-yellow-50 border-yellow-400 shadow-md'
+                        : 'bg-slate-50 border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {medal && <span className="text-2xl">{medal}</span>}
+                      {!medal && <span className="text-lg font-bold text-slate-400">#{idx + 1}</span>}
+                      <span className="text-xl">{seat.isAI ? '🤖' : '👤'}</span>
+                      <span className="font-semibold text-lg">{seat.name}</span>
+                    </div>
+                    <div className={`text-2xl font-bold ${isLeader ? 'text-yellow-700' : 'text-purple-600'}`}>
+                      {seat.totalVP || 0} VP
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-purple-600">{seat.totalVP || 0} VP</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Continue Button */}
           <button
             onClick={() => onPlayerAction('continue_from_summary')}
-            className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-lg"
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 font-bold text-xl shadow-lg hover:shadow-xl transition-all"
           >
-            {fairNumber >= 3 ? 'View Final Results' : `Continue to Fair ${fairNumber + 1}`}
+            {fairNumber >= 3 ? '🎊 View Final Results 🎊' : `✨ Continue to Fair ${fairNumber + 1} ✨`}
           </button>
         </div>
       </div>
