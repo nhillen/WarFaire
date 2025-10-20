@@ -771,6 +771,9 @@ export default function WarFaireClient({
                   card.playedAtFair === currentFair
                 );
 
+                // Show face-down cards for next fair
+                const faceDownCards = (seat as any).faceDownCards || [];
+
                 return (
                   <div key={seat.playerId} className="row">
                     <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-xs font-bold text-white">
@@ -778,15 +781,19 @@ export default function WarFaireClient({
                     </div>
                     <span className="text-sm font-medium text-white">{seat.name}</span>
                     <div className="chips">
-                      {currentFairCards.length > 0 ? (
-                        currentFairCards.map((card: any, idx: number) => (
-                          <MiniCardChip
-                            key={idx}
-                            categoryId={card.category.toLowerCase()}
-                            value={card.value}
-                          />
-                        ))
-                      ) : null}
+                      {currentFairCards.length > 0 && currentFairCards.map((card: any, idx: number) => (
+                        <MiniCardChip
+                          key={`up-${idx}`}
+                          categoryId={card.category.toLowerCase()}
+                          value={card.value}
+                        />
+                      ))}
+                      {faceDownCards.length > 0 && faceDownCards.map((_: any, idx: number) => (
+                        <div key={`down-${idx}`} className="mini-chip">
+                          <img src="/assets/card_art/card_back.png" alt="Face-down card" />
+                          <span className="val">?</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
