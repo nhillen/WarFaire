@@ -8,11 +8,59 @@ export class WarFaireGame extends GameBase {
   private pendingActions: Map<string, any> = new Map();
   private currentFair: number = 0;
   private currentRound: number = 0;
+  private aiTurnTimer: NodeJS.Timeout | null = null;
 
   constructor(tableConfig: any) {
     super(tableConfig);
     this.tableConfig.maxSeats = 10; // WarFaire supports up to 10 players
     this.initializeGameState('Lobby'); // Initialize with lobby state
+  }
+
+  /**
+   * Override sitPlayer to remove bankroll requirement for WarFaire
+   * WarFaire doesn't use betting, so players can join with 0 bankroll
+   */
+  public sitPlayer(player: Player, seatIndex?: number, buyInAmount?: number): { success: boolean; error?: string; seatIndex?: number } {
+    if (!this.gameState) {
+      return { success: false, error: 'Game not initialized' };
+    }
+
+    // WarFaire doesn't require bankroll - players can join with 0
+    const requiredBuyIn = 0;
+
+    // Find empty seat
+    let targetSeat = seatIndex;
+    if (targetSeat === undefined) {
+      targetSeat = this.gameState.seats.findIndex(s => s === null);
+      if (targetSeat === -1) {
+        return { success: false, error: 'No empty seats' };
+      }
+    }
+
+    // Check if seat is empty
+    if (this.gameState.seats[targetSeat] !== null) {
+      return { success: false, error: 'Seat already taken' };
+    }
+
+    // Create seat
+    const seat: Seat = {
+      playerId: player.id,
+      name: player.name,
+      isAI: player.isAI,
+      tableStack: requiredBuyIn,
+      hasFolded: false,
+      currentBet: 0,
+      hasActed: false,
+      totalContribution: 0,
+      ...(player.cosmetics && { cosmetics: player.cosmetics }),
+    };
+
+    this.gameState.seats[targetSeat] = seat;
+
+    // No bankroll deduction for WarFaire
+    player.tableStack = requiredBuyIn;
+
+    return { success: true, seatIndex: targetSeat };
   }
 
   startHand(): void {
@@ -109,8 +157,11 @@ export class WarFaireGame extends GameBase {
     // Broadcast state
     this.broadcastGameState();
 
-    // Auto-play for AI after delay
-    setTimeout(() => this.handleAITurns(), 1000);
+    // Schedule AI turn check with timeout (in case no humans act)
+    if (this.aiTurnTimer) {
+      clearTimeout(this.aiTurnTimer);
+    }
+    this.aiTurnTimer = setTimeout(() => this.handleAITurns(), 5000); // 5 seconds for humans to act
   }
 
   private syncWarFaireStateToSeats(): void {
@@ -202,12 +253,19 @@ export class WarFaireGame extends GameBase {
     // Broadcast updated state so player sees "waiting for others"
     this.broadcastGameState();
 
-    // Trigger AI turns after human player acts
+    // Clear any pending AI timer and trigger AI turns immediately
+    if (this.aiTurnTimer) {
+      clearTimeout(this.aiTurnTimer);
+      this.aiTurnTimer = null;
+    }
     setTimeout(() => this.handleAITurns(), 500);
   }
 
   private handleAITurns(): void {
     if (!this.warfaireInstance || !this.gameState) return;
+
+    // Clear the timer reference since we're executing now
+    this.aiTurnTimer = null;
 
     console.log(`🎪 [AI] Starting AI turns handler`);
     let aiActionsCount = 0;

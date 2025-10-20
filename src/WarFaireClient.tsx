@@ -80,6 +80,7 @@ export default function WarFaireClient({
 
   // ===== UI STATE FOR POPOVER =====
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
 
   // ===== DERIVED DATA FROM EXISTING PROPS =====
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
@@ -624,6 +625,7 @@ export default function WarFaireClient({
                       style={{ height: '56px' }}
                       onMouseEnter={() => setHoveredCategory(cat.name)}
                       onMouseLeave={() => setHoveredCategory(null)}
+                      onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                     >
                       {/* Left: Icon + Name + Sublabel */}
                       <span className="text-2xl" style={{ width: '24px', height: '24px', lineHeight: '24px' }}>{emoji}</span>
@@ -653,39 +655,46 @@ export default function WarFaireClient({
                       </div>
                     </div>
 
-                    {/* Popover on hover */}
+                    {/* Popover on hover - follows mouse */}
                     {hoveredCategory === cat.name && allScores.length > 0 && (
                       <div
-                        className="absolute z-30 mt-2 w-72 bg-white border-2 border-slate-400 rounded-lg shadow-2xl overflow-hidden"
-                        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
-                        onMouseEnter={() => setHoveredCategory(cat.name)}
-                        onMouseLeave={() => setHoveredCategory(null)}
+                        className="fixed z-50 w-72 rounded-lg shadow-2xl overflow-hidden pointer-events-none"
+                        style={{
+                          left: `${Math.min(mousePos.x + 10, window.innerWidth - 300)}px`,
+                          top: `${Math.min(mousePos.y + 10, window.innerHeight - 300)}px`,
+                          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                          border: '3px solid rgb(100, 116, 139)',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                        }}
                       >
-                        <div className="px-4 py-3 bg-slate-100 border-b-2 border-slate-300">
+                        <div className="px-4 py-3 border-b-2 border-slate-400" style={{ backgroundColor: 'rgba(241, 245, 249, 0.98)' }}>
                           <div className="flex items-center gap-2">
                             <span className="text-xl">{emoji}</span>
-                            <span className="text-sm font-semibold text-slate-900">{cat.name}</span>
+                            <span className="text-sm font-bold text-slate-900">{cat.name}</span>
                           </div>
                         </div>
-                        <div className="max-h-64 overflow-y-auto bg-white">
+                        <div className="max-h-64 overflow-y-auto" style={{ backgroundColor: 'rgba(255, 255, 255, 0.98)' }}>
                           <table className="w-full text-sm">
-                            <thead className="bg-slate-100 sticky top-0 border-b-2 border-slate-200">
+                            <thead className="sticky top-0 border-b-2 border-slate-300" style={{ backgroundColor: 'rgba(241, 245, 249, 0.98)' }}>
                               <tr>
-                                <th className="text-left px-4 py-2 font-medium text-slate-700">Player</th>
-                                <th className="text-right px-4 py-2 font-medium text-slate-700">Points</th>
+                                <th className="text-left px-4 py-2 font-semibold text-slate-900">Player</th>
+                                <th className="text-right px-4 py-2 font-semibold text-slate-900">Points</th>
                               </tr>
                             </thead>
-                            <tbody className="bg-white">
+                            <tbody>
                               {allScores.map((player, idx) => (
                                 <tr
                                   key={player.playerId}
-                                  className={`border-t border-slate-200 ${player.playerId === meId ? 'bg-purple-50' : 'bg-white'}`}
+                                  className={`border-t border-slate-200`}
+                                  style={{
+                                    backgroundColor: player.playerId === meId ? 'rgba(243, 232, 255, 0.98)' : 'rgba(255, 255, 255, 0.98)'
+                                  }}
                                 >
-                                  <td className="px-4 py-2 text-slate-900">{player.name}</td>
-                                  <td className="px-4 py-2 text-right font-medium text-slate-900">
+                                  <td className="px-4 py-2 font-medium text-slate-900">{player.name}</td>
+                                  <td className="px-4 py-2 text-right font-bold text-slate-900">
                                     {player.score}
                                     {player.delta > 0 && (
-                                      <span className="text-xs text-green-600 ml-1">+{player.delta}</span>
+                                      <span className="text-xs text-green-700 font-semibold ml-1">+{player.delta}</span>
                                     )}
                                   </td>
                                 </tr>
