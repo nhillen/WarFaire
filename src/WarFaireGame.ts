@@ -90,12 +90,11 @@ export class WarFaireGame extends GameBase {
       this.warfaireInstance.setupFirstFair();
       console.log('🎪 First fair setup complete');
 
-    // Add WarFaire-specific fields to existing seats
+    // Initialize WarFaire-specific fields on seats
     this.gameState.seats.forEach((seat, index) => {
       if (seat) {
         seat.hand = [];
         seat.playedCards = [];
-        seat.faceDownCards = [];
         seat.ribbons = [];
         seat.totalVP = 0;
         seat.hasActed = false; // Reset hasActed for new game
@@ -107,6 +106,9 @@ export class WarFaireGame extends GameBase {
       (this.gameState as any).activeCategories = this.warfaireInstance.activeCategories;
       (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
       (this.gameState as any).currentFair = this.currentFair;
+
+      // Sync initial state (including the 3 initial face-down cards)
+      this.syncWarFaireStateToSeats();
 
       console.log('🎪 Starting first round...');
       // Start first round
@@ -134,18 +136,23 @@ export class WarFaireGame extends GameBase {
       player.currentRound = this.currentRound;
     }
 
-    // In Fair 2+, flip face-down cards from previous fair that match this round
-    if (this.currentFair > 1) {
-      for (const player of this.warfaireInstance.players) {
-        const cardToFlip = player.faceDownCards.find(
-          (card: any) => card.playedFaceDownAtFair === this.currentFair - 1 &&
-                        card.playedFaceDownAtRound === this.currentRound
-        );
-        if (cardToFlip) {
-          const index = player.faceDownCards.indexOf(cardToFlip);
-          player.faceDownCards.splice(index, 1);
-          player.addToHand(cardToFlip);
-          console.log(`🎪 ${player.name} flips face-down card from Fair ${this.currentFair - 1} Round ${this.currentRound}`);
+    // Flip face-down card for this round
+    // Fair 1: Flip initial cards (Fair 0)
+    // Fair 2+: Flip cards from previous fair
+    const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
+    for (const player of this.warfaireInstance.players) {
+      const cardToFlip = player.faceDownCards.find(
+        (card: any) => card.playedFaceDownAtFair === fairToFlipFrom &&
+                      card.playedFaceDownAtRound === this.currentRound
+      );
+      if (cardToFlip) {
+        const index = player.faceDownCards.indexOf(cardToFlip);
+        player.faceDownCards.splice(index, 1);
+        player.addToHand(cardToFlip);
+        if (fairToFlipFrom === 0) {
+          console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound}`);
+        } else {
+          console.log(`🎪 ${player.name} flips face-down card from Fair ${fairToFlipFrom} Round ${this.currentRound}`);
         }
       }
     }

@@ -848,24 +848,22 @@ export default function WarFaireClient({
                           value={card.value}
                         />
                       ))}
-                      {faceDownCards.length > 0 && (
+                      {faceDownCards.length > 0 && faceDownCards.map((card: any, idx: number) => (
                         isMyCards ? (
                           // Show my face-down cards with details
-                          faceDownCards.map((card: any, idx: number) => (
-                            <MiniCardChip
-                              key={`down-${idx}`}
-                              categoryId={card.category ? card.category.toLowerCase() : 'unknown'}
-                              value={card.value}
-                            />
-                          ))
+                          <MiniCardChip
+                            key={`down-${idx}`}
+                            categoryId={card.category ? card.category.toLowerCase() : 'unknown'}
+                            value={card.value}
+                          />
                         ) : (
-                          // Show opponent face-down cards as count only
-                          <div className="mini-chip">
-                            <img src="/assets/card_art/card_back.png" alt="Face-down cards" />
-                            <span className="val">{faceDownCards.length}</span>
+                          // Show opponent face-down cards as individual backs
+                          <div key={`down-${idx}`} className="mini-chip">
+                            <img src="/assets/card_art/card_back.png" alt="Face-down card" />
+                            <span className="val">?</span>
                           </div>
                         )
-                      )}
+                      ))}
                     </div>
                   </div>
                 );

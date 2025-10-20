@@ -53,9 +53,27 @@ export class Game {
     this.deck = shuffleDeck(createDeck(activeCategoryKeys));
     this.log(`Deck created with ${this.deck.length} cards`);
 
-    // No initial face-down cards - players start with empty hands
-    // Face-down cards will be created when players play them
-    this.log('\nNo initial face-down cards - will be created during play');
+    // Each player gets 3 face-down cards (for Fair 1 Rounds 1, 2, 3)
+    this.log('\nInitial face-down cards (for Fair 1):');
+    for (const player of this.players) {
+      for (let i = 0; i < 3; i++) {
+        if (this.deck.length > 0) {
+          const card = this.deck.pop();
+          // Handle group cards - for setup, randomly assign to valid category
+          if (card.isGroupCard) {
+            const validCategories = this.activeCategories.filter(c => c.group === card.category);
+            if (validCategories.length > 0) {
+              card.selectedCategory = validCategories[Math.floor(Math.random() * validCategories.length)].name;
+            }
+          }
+          // Tag as initial cards (Fair 0) for rounds 1, 2, 3
+          card.playedFaceDownAtFair = 0;
+          card.playedFaceDownAtRound = i + 1;
+          player.faceDownCards.push(card);
+        }
+      }
+      this.log(`  ${player.name}: ${player.faceDownCards.length} cards`);
+    }
 
     this.fairNumber = 1;
   }
@@ -65,19 +83,24 @@ export class Game {
     this.roundNumber++;
     this.log(`\n--- Round ${this.roundNumber} ---`);
 
-    // Step 1: In Fair 2+, flip face-down cards from previous fair that match this round
-    if (this.fairNumber > 1) {
-      for (const player of this.players) {
-        const cardToFlip = player.faceDownCards.find(
-          card => card.playedFaceDownAtFair === this.fairNumber - 1 &&
-                 card.playedFaceDownAtRound === this.roundNumber
-        );
-        if (cardToFlip) {
-          // Remove from faceDownCards and add to hand
-          const index = player.faceDownCards.indexOf(cardToFlip);
-          player.faceDownCards.splice(index, 1);
-          player.addToHand(cardToFlip);
-          this.log(`${player.name} flips face-down card from Fair ${this.fairNumber - 1} Round ${this.roundNumber}`);
+    // Step 1: Flip face-down card for this round
+    // Fair 1: Flip initial cards (Fair 0)
+    // Fair 2+: Flip cards from previous fair
+    const fairToFlipFrom = this.fairNumber === 1 ? 0 : this.fairNumber - 1;
+    for (const player of this.players) {
+      const cardToFlip = player.faceDownCards.find(
+        card => card.playedFaceDownAtFair === fairToFlipFrom &&
+               card.playedFaceDownAtRound === this.roundNumber
+      );
+      if (cardToFlip) {
+        // Remove from faceDownCards and add to hand
+        const index = player.faceDownCards.indexOf(cardToFlip);
+        player.faceDownCards.splice(index, 1);
+        player.addToHand(cardToFlip);
+        if (fairToFlipFrom === 0) {
+          this.log(`${player.name} flips initial face-down card #${this.roundNumber}`);
+        } else {
+          this.log(`${player.name} flips face-down card from Fair ${fairToFlipFrom} Round ${this.roundNumber}`);
         }
       }
     }
