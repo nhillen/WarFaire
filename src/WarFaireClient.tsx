@@ -641,12 +641,17 @@ export default function WarFaireClient({
                         </div>
                       </div>
                       <div className="right">
-                        {/* P0: Simplified right side - just leader chip and delta */}
+                        {/* Show top 3 leaders */}
                         {leaders.length > 0 && (
                           <>
                             <LeaderChip avatarText={leaders[0].name.charAt(0)} points={leaders[0].score} />
                             {leaders.length > 1 && (
-                              <div className="delta">+{leaders[0].score - leaders[1].score}</div>
+                              <>
+                                <LeaderChip avatarText={leaders[1].name.charAt(0)} points={leaders[1].score} />
+                                {leaders.length > 2 && (
+                                  <LeaderChip avatarText={leaders[2].name.charAt(0)} points={leaders[2].score} />
+                                )}
+                              </>
                             )}
                           </>
                         )}
@@ -757,7 +762,10 @@ export default function WarFaireClient({
             </div>
             <div className="panel board-panel board-rows">
               {boardPlayers.map((seat: any) => {
-                const card = seat.currentFaceUpCard;
+                // Show all cards played in the current fair
+                const currentFairCards = (seat.playedCards || []).filter((card: any) =>
+                  card.playedAtFair === currentFair
+                );
 
                 return (
                   <div key={seat.playerId} className="row">
@@ -766,12 +774,15 @@ export default function WarFaireClient({
                     </div>
                     <span className="text-sm font-medium text-white">{seat.name}</span>
                     <div className="chips">
-                      {card && (
-                        <MiniCardChip
-                          categoryId={card.category.toLowerCase()}
-                          value={card.value}
-                        />
-                      )}
+                      {currentFairCards.length > 0 ? (
+                        currentFairCards.map((card: any, idx: number) => (
+                          <MiniCardChip
+                            key={idx}
+                            categoryId={card.category.toLowerCase()}
+                            value={card.value}
+                          />
+                        ))
+                      ) : null}
                     </div>
                   </div>
                 );
