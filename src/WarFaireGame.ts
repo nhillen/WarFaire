@@ -9,6 +9,7 @@ export class WarFaireGame extends GameBase {
   private currentFair: number = 0;
   private currentRound: number = 0;
   private aiTurnTimer: NodeJS.Timeout | null = null;
+  private isProcessingRound: boolean = false;
 
   constructor(tableConfig: any) {
     super(tableConfig);
@@ -299,10 +300,16 @@ export class WarFaireGame extends GameBase {
     try {
       if (!this.warfaireInstance || !this.gameState) return;
 
+      // Don't process if we're already in a summary phase
+      if (this.gameState.phase.includes('Summary')) {
+        console.log(`🎪 [AI] Skipping - already in summary phase: ${this.gameState.phase}`);
+        return;
+      }
+
       // Clear the timer reference since we're executing now
       this.aiTurnTimer = null;
 
-      console.log(`🎪 [AI] Starting AI turns handler`);
+      console.log(`🎪 [AI] Starting AI turns handler at ${Date.now()}`);
       let aiActionsCount = 0;
 
     // Auto-play for AI players using existing WarFaire AI logic
@@ -404,6 +411,13 @@ export class WarFaireGame extends GameBase {
     try {
       if (!this.warfaireInstance || !this.gameState) return;
 
+      // Prevent re-entry
+      if (this.isProcessingRound) {
+        console.log(`🎪 [GUARD] Already processing round, skipping`);
+        return;
+      }
+
+      this.isProcessingRound = true;
       console.log(`🎪 Processing round - Fair ${this.currentFair}, Round ${this.currentRound}`);
 
     // Apply all pending actions from human players
@@ -476,10 +490,12 @@ export class WarFaireGame extends GameBase {
       this.gameState.phase = `RoundSummary${this.currentFair}_${this.currentRound}`;
       console.log(`🎪 Entering RoundSummary phase`);
 
+      this.isProcessingRound = false;
       this.broadcastGameState();
     } catch (error) {
       console.error('🎪 ERROR in processRound:', error);
       console.error('🎪 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      this.isProcessingRound = false;
       // Try to recover by broadcasting current state
       if (this.gameState) {
         this.broadcastGameState();
