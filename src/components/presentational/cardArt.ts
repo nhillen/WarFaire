@@ -14,8 +14,7 @@ export const CARD_ART: Record<string, string> = {
   cookies: "/assets/card_art/cookies.png",
   chickens: "/assets/card_art/chickens.png",
   pigs: "/assets/card_art/pigs.png",
-  cows: "/assets/card_art/cows.png",
-  goats: "/assets/card_art/goats.png"
+  cows: "/assets/card_art/cows.png"
 };
 
 /**
