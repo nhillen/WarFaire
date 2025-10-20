@@ -853,13 +853,28 @@ export default function WarFaireClient({
                   myPlayedCards.length === 0 ? (
                     <div className="empty-state">No plays yet</div>
                   ) : (
-                    <div className="grid grid-cols-6 gap-2">
-                      {myPlayedCards.map((card, i) => {
-                        const emoji = CATEGORY_EMOJIS[card.category] || '';
+                    <div className="space-y-4">
+                      {/* Group played cards by fair */}
+                      {[1, 2, 3].map(fairNum => {
+                        const cardsInFair = myPlayedCards.filter((c: any) => c.playedAtFair === fairNum);
+                        if (cardsInFair.length === 0) return null;
+
                         return (
-                          <div key={i} className="border border-slate-200 rounded p-2 text-center">
-                            <div className="text-sm">{emoji}</div>
-                            <div className="text-base font-bold">{card.value}</div>
+                          <div key={fairNum}>
+                            <div className="text-xs font-semibold text-slate-500 mb-2">Fair {fairNum}</div>
+                            <div className="grid grid-cols-6 gap-2">
+                              {cardsInFair.map((card: any, i: number) => {
+                                const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                                const emoji = CATEGORY_EMOJIS[effectiveCategory] || '';
+                                return (
+                                  <div key={`${fairNum}-${i}`} className="border border-slate-200 rounded p-2 text-center bg-white">
+                                    <div className="text-sm">{emoji}</div>
+                                    <div className="text-base font-bold">{card.value}</div>
+                                    <div className="text-xs text-slate-400">R{card.playedAtRound}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })}
