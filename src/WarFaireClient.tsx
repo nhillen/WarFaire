@@ -503,14 +503,18 @@ export default function WarFaireClient({
     allSeats: game.seats?.map(s => s ? { playerId: s.playerId, name: s.name, hasActed: s.hasActed } : null)
   });
 
-  // Calculate per-category leaders (derived from existing data, no new logic)
+  // Calculate per-category leaders for CURRENT FAIR only
   const getCategoryLeaders = (categoryName: string) => {
     const playerScores: Array<{ name: string; score: number; playerId: string }> = [];
 
     game.seats.forEach(seat => {
       if (seat && seat.playedCards) {
+        // Only count cards played in the current fair
         const score = seat.playedCards
-          .filter(card => card.category === categoryName)
+          .filter(card => {
+            const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+            return effectiveCategory === categoryName && card.playedAtFair === currentFair;
+          })
           .reduce((sum, card) => sum + card.value, 0);
         if (score > 0) {
           playerScores.push({ name: seat.name, score, playerId: seat.playerId });
@@ -700,7 +704,7 @@ export default function WarFaireClient({
                                     <td className="px-4 py-2 font-bold text-slate-900">You</td>
                                     <td className="px-4 py-2 text-right font-bold text-slate-900">{myScore.score}</td>
                                     <td className="px-4 py-2 text-right font-semibold text-green-700">
-                                      {myScore.delta > 0 ? `+${myScore.delta}` : myScore.delta}
+                                      {myScore.delta > 0 && `+${myScore.delta}`}
                                     </td>
                                   </tr>
                                 );
