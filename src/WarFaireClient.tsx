@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { CardShell } from './components/presentational/CardShell';
+import { CardBack } from './components/presentational/CardBack';
+import { MiniCardChip } from './components/presentational/MiniCardChip';
+import { LeaderChip } from './components/presentational/LeaderChip';
+import { getCardArt } from './components/presentational/cardArt';
 
-// Category emojis
+// Category emojis (kept for summary/results screens, removed from main UI)
 const CATEGORY_EMOJIS: Record<string, string> = {
   'Carrots': '🥕',
   'Pumpkins': '🎃',
@@ -567,7 +572,17 @@ export default function WarFaireClient({
 
   // ===== MAIN GAME VIEW - LAYOUT ONLY, PRESERVE ALL LOGIC =====
   return (
-    <div className="h-full flex flex-col bg-slate-50">
+    <div
+      className="h-full flex flex-col"
+      style={{
+        background: 'linear-gradient(to bottom, rgb(248, 250, 252), rgb(241, 245, 249))',
+        backgroundImage: 'url("/assets/card_art/paper_grain.png")',
+        backgroundBlendMode: 'overlay',
+        opacity: 1,
+        backgroundSize: 'auto',
+        backgroundRepeat: 'repeat',
+      }}
+    >
       {/* Top bar - UNCHANGED as per spec */}
       <div className="h-11 bg-white border-b border-slate-200 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -621,38 +636,41 @@ export default function WarFaireClient({
                     className="relative"
                   >
                     <div
-                      className="bg-white border border-slate-300 rounded-lg px-4 py-2 flex items-center gap-2 cursor-default hover:border-slate-400 transition-colors"
+                      className="bg-white border border-slate-300 rounded-lg px-4 py-2 flex items-center gap-3 cursor-default hover:border-slate-400 transition-colors"
                       style={{ height: '56px' }}
                       onMouseEnter={() => setHoveredCategory(cat.name)}
                       onMouseLeave={() => setHoveredCategory(null)}
                       onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                     >
-                      {/* Left: Icon + Name + Sublabel */}
-                      <span className="text-2xl" style={{ width: '24px', height: '24px', lineHeight: '24px' }}>{emoji}</span>
+                      {/* Left: Card art icon (24px) */}
+                      <img
+                        src={getCardArt(cat.name.toLowerCase())}
+                        alt=""
+                        width="24"
+                        height="24"
+                        style={{ objectFit: 'contain' }}
+                      />
+
+                      {/* Category name and group */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{cat.name}</div>
-                        <div className="text-xs text-slate-500">{cat.group}</div>
+                        <div style={{ fontSize: '14px', lineHeight: '20px' }} className="font-medium text-slate-900">
+                          {cat.name}
+                        </div>
+                        <div style={{ fontSize: '12px', lineHeight: '16px' }} className="text-slate-600">
+                          {cat.group}
+                        </div>
                       </div>
 
-                      {/* Right: Leader strip + Total */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          {leaders.slice(0, 3).map((leader, idx) => (
-                            <div key={leader.playerId} className="relative">
-                              <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-[10px]">
-                                {leader.name.charAt(0)}
-                              </div>
-                              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-purple-600 text-white text-[8px] flex items-center justify-center">
-                                {leader.score}
-                              </div>
-                            </div>
-                          ))}
-                          {leaders.length > 3 && (
-                            <div className="text-xs text-slate-500">+{leaders.length - 3}</div>
-                          )}
+                      {/* Right: LeaderChip + Delta */}
+                      {leaders.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <LeaderChip
+                            avatarText={leaders[0].name.charAt(0)}
+                            points={leaders[0].score}
+                            delta={leaders.length > 1 ? leaders[0].score - leaders[1].score : undefined}
+                          />
                         </div>
-                        <div className="text-sm font-bold text-slate-700 min-w-[32px] text-right">{topScore}</div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Popover on hover - follows mouse */}
@@ -669,7 +687,13 @@ export default function WarFaireClient({
                       >
                         <div className="px-4 py-3 border-b-2 border-slate-400" style={{ backgroundColor: 'rgba(241, 245, 249, 0.98)' }}>
                           <div className="flex items-center gap-2">
-                            <span className="text-xl">{emoji}</span>
+                            <img
+                              src={getCardArt(cat.name.toLowerCase())}
+                              alt=""
+                              width="20"
+                              height="20"
+                              style={{ objectFit: 'contain' }}
+                            />
                             <span className="text-sm font-bold text-slate-900">{cat.name}</span>
                           </div>
                         </div>
@@ -741,7 +765,6 @@ export default function WarFaireClient({
             <div className="bg-white border border-slate-300 rounded-lg p-4 space-y-2">
               {boardPlayers.map((seat: any) => {
                 const card = seat.currentFaceUpCard;
-                const emoji = card ? CATEGORY_EMOJIS[card.category] || '' : '';
 
                 return (
                   <div
@@ -749,16 +772,17 @@ export default function WarFaireClient({
                     className={`flex items-center gap-3 p-2 rounded border ${
                       seat.playerId === meId ? 'bg-purple-50 border-purple-300' : 'border-slate-200'
                     }`}
+                    style={{ height: '40px' }}
                   >
                     <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs">
                       {seat.name.charAt(0)}
                     </div>
                     <span className="flex-1 text-sm font-medium">{seat.name}</span>
                     {card && (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs">
-                        <span>{emoji}</span>
-                        <span className="font-bold">{card.value}</span>
-                      </div>
+                      <MiniCardChip
+                        categoryId={card.category.toLowerCase()}
+                        value={card.value}
+                      />
                     )}
                   </div>
                 );
@@ -795,31 +819,21 @@ export default function WarFaireClient({
                   ) : myHand.length === 0 ? (
                     <p className="text-center py-6 text-sm text-slate-500">No cards</p>
                   ) : (
-                    <div className="grid grid-cols-4 gap-4">
-                      {myHand.map((card, i) => {
+                    <div className="grid grid-cols-3 gap-4">
+                      {myHand.slice(0, 3).map((card, i) => {
                         const isSelected = slotA?.index === i || slotB?.index === i;
-                        const emoji = CATEGORY_EMOJIS[card.category] || '';
+                        // Find the group for this category
+                        const categoryInfo = activeCategories.find(cat => cat.name === card.category);
                         return (
-                          <div
+                          <CardShell
                             key={i}
+                            categoryId={card.category.toLowerCase()}
+                            categoryName={card.category}
+                            groupName={categoryInfo?.group}
+                            value={card.value}
+                            isSelected={isSelected}
                             onClick={() => selectCard(card, i)}
-                            className={`relative border rounded-lg p-3 cursor-pointer transition-all ${
-                              isSelected ? 'border-purple-500 bg-purple-50 shadow' : 'border-slate-300 bg-white hover:border-slate-400'
-                            }`}
-                          >
-                            {/* Top left: Icon */}
-                            <div className="absolute top-2 left-2 text-lg">{emoji}</div>
-
-                            {/* Top right: Value badge */}
-                            <div className="absolute top-2 right-2 px-2 py-1 bg-slate-100 rounded-lg text-sm font-bold">
-                              {card.value}
-                            </div>
-
-                            {/* Bottom center: Name */}
-                            <div className="mt-8 text-center text-xs font-medium text-slate-700">
-                              {card.category}
-                            </div>
-                          </div>
+                          />
                         );
                       })}
                     </div>
@@ -853,28 +867,46 @@ export default function WarFaireClient({
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-300 shadow-lg px-4 py-3 z-20">
           <div className="max-w-[1280px] mx-auto flex items-center gap-4">
             {/* Slot A */}
-            <div className="flex-1 border border-dashed border-slate-300 rounded-lg p-3 min-h-[56px] flex items-center">
+            <div className="border border-dashed border-slate-300 rounded-lg p-3 flex items-center justify-center" style={{ width: '120px', height: '100px' }}>
               {slotA ? (
-                <div className="flex items-center gap-2 w-full">
-                  <span className="text-sm">{CATEGORY_EMOJIS[slotA.card.category]}</span>
-                  <span className="text-sm font-medium">{slotA.card.category}</span>
-                  <span className="ml-auto font-bold text-purple-600">{slotA.card.value}</span>
-                  {!isFaceUp && <span className="text-xs text-slate-500 ml-2">scores next round</span>}
-                </div>
+                !isFaceUp ? (
+                  <CardBack label="next fair" className="w-full h-full" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <img
+                      src={getCardArt(slotA.card.category.toLowerCase())}
+                      alt=""
+                      width="40"
+                      height="40"
+                      style={{ objectFit: 'contain' }}
+                    />
+                    <div className="text-xs font-medium text-center">{slotA.card.category}</div>
+                    <div className="text-sm font-bold text-purple-600">{slotA.card.value}</div>
+                  </div>
+                )
               ) : (
                 <span className="text-sm text-slate-400">Slot A</span>
               )}
             </div>
 
             {/* Slot B */}
-            <div className="flex-1 border border-dashed border-slate-300 rounded-lg p-3 min-h-[56px] flex items-center">
+            <div className="border border-dashed border-slate-300 rounded-lg p-3 flex items-center justify-center" style={{ width: '120px', height: '100px' }}>
               {slotB ? (
-                <div className="flex items-center gap-2 w-full">
-                  <span className="text-sm">{CATEGORY_EMOJIS[slotB.card.category]}</span>
-                  <span className="text-sm font-medium">{slotB.card.category}</span>
-                  <span className="ml-auto font-bold text-purple-600">{slotB.card.value}</span>
-                  {isFaceUp && <span className="text-xs text-slate-500 ml-2">scores next round</span>}
-                </div>
+                isFaceUp ? (
+                  <CardBack label="next fair" className="w-full h-full" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <img
+                      src={getCardArt(slotB.card.category.toLowerCase())}
+                      alt=""
+                      width="40"
+                      height="40"
+                      style={{ objectFit: 'contain' }}
+                    />
+                    <div className="text-xs font-medium text-center">{slotB.card.category}</div>
+                    <div className="text-sm font-bold text-purple-600">{slotB.card.value}</div>
+                  </div>
+                )
               ) : (
                 <span className="text-sm text-slate-400">Slot B</span>
               )}

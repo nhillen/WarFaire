@@ -233,9 +233,10 @@ export class WarFaireGame extends GameBase {
   }
 
   private handlePlayCards(playerId: string, data: any): void {
-    const { faceUpCard, faceDownCard, groupSelections } = data;
+    try {
+      const { faceUpCard, faceDownCard, groupSelections } = data;
 
-    console.log(`🎪 Received play_cards from ${playerId}:`, { faceUpCard, faceDownCard });
+      console.log(`🎪 Received play_cards from ${playerId}:`, { faceUpCard, faceDownCard });
 
     // Store pending action
     this.pendingActions.set(playerId, {
@@ -253,22 +254,29 @@ export class WarFaireGame extends GameBase {
     // Broadcast updated state so player sees "waiting for others"
     this.broadcastGameState();
 
-    // Clear any pending AI timer and trigger AI turns immediately
-    if (this.aiTurnTimer) {
-      clearTimeout(this.aiTurnTimer);
-      this.aiTurnTimer = null;
+      // Clear any pending AI timer and trigger AI turns immediately
+      if (this.aiTurnTimer) {
+        clearTimeout(this.aiTurnTimer);
+        this.aiTurnTimer = null;
+      }
+      setTimeout(() => this.handleAITurns(), 500);
+    } catch (error) {
+      console.error('🎪 ERROR in handlePlayCards:', error);
+      console.error('🎪 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      // Broadcast current state to show error to client
+      this.broadcastGameState();
     }
-    setTimeout(() => this.handleAITurns(), 500);
   }
 
   private handleAITurns(): void {
-    if (!this.warfaireInstance || !this.gameState) return;
+    try {
+      if (!this.warfaireInstance || !this.gameState) return;
 
-    // Clear the timer reference since we're executing now
-    this.aiTurnTimer = null;
+      // Clear the timer reference since we're executing now
+      this.aiTurnTimer = null;
 
-    console.log(`🎪 [AI] Starting AI turns handler`);
-    let aiActionsCount = 0;
+      console.log(`🎪 [AI] Starting AI turns handler`);
+      let aiActionsCount = 0;
 
     // Auto-play for AI players using existing WarFaire AI logic
     this.gameState.seats.forEach((seat, index) => {
@@ -351,18 +359,25 @@ export class WarFaireGame extends GameBase {
       } : null).filter(Boolean)
     });
 
-    if (allActed) {
-      console.log('🎪 [AI] All players acted! Processing round...');
-      this.processRound();
-    } else {
-      console.log('🎪 [AI] NOT all players acted yet. Waiting...');
+      if (allActed) {
+        console.log('🎪 [AI] All players acted! Processing round...');
+        this.processRound();
+      } else {
+        console.log('🎪 [AI] NOT all players acted yet. Waiting...');
+      }
+    } catch (error) {
+      console.error('🎪 [AI] ERROR in handleAITurns:', error);
+      console.error('🎪 [AI] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      // Broadcast current state and return to prevent crash
+      this.broadcastGameState();
     }
   }
 
   private processRound(): void {
-    if (!this.warfaireInstance || !this.gameState) return;
+    try {
+      if (!this.warfaireInstance || !this.gameState) return;
 
-    console.log(`🎪 Processing round - Fair ${this.currentFair}, Round ${this.currentRound}`);
+      console.log(`🎪 Processing round - Fair ${this.currentFair}, Round ${this.currentRound}`);
 
     // Apply all pending actions from human players
     for (const [playerId, action] of this.pendingActions) {
@@ -430,11 +445,19 @@ export class WarFaireGame extends GameBase {
     console.log(`🎪 Resetting hasActed flags for all seats`);
     this.gameState.seats.forEach(s => { if (s) s.hasActed = false; });
 
-    // Transition to RoundSummary phase
-    this.gameState.phase = `RoundSummary${this.currentFair}_${this.currentRound}`;
-    console.log(`🎪 Entering RoundSummary phase`);
+      // Transition to RoundSummary phase
+      this.gameState.phase = `RoundSummary${this.currentFair}_${this.currentRound}`;
+      console.log(`🎪 Entering RoundSummary phase`);
 
-    this.broadcastGameState();
+      this.broadcastGameState();
+    } catch (error) {
+      console.error('🎪 ERROR in processRound:', error);
+      console.error('🎪 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      // Try to recover by broadcasting current state
+      if (this.gameState) {
+        this.broadcastGameState();
+      }
+    }
   }
 
   private continueFromRoundSummary(): void {
