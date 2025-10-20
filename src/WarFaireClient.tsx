@@ -4,7 +4,6 @@ import { CardBack } from './components/presentational/CardBack';
 import { MiniCardChip } from './components/presentational/MiniCardChip';
 import { LeaderChip } from './components/presentational/LeaderChip';
 import { getCardArt } from './components/presentational/cardArt';
-import './styles/presentation.css';
 
 // Category emojis (kept for summary/results screens, removed from main UI)
 const CATEGORY_EMOJIS: Record<string, string> = {
