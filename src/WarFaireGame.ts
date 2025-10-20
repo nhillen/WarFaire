@@ -463,7 +463,12 @@ export class WarFaireGame extends GameBase {
     this.gameState.seats.forEach((seat, idx) => {
       if (seat && this.warfaireInstance) {
         const player = this.warfaireInstance.players[idx];
-        const faceUpCard = player.faceUpCards.length > 0
+        if (!player) {
+          console.log(`🎪 [WARN] No player found at index ${idx} for seat ${seat.name}`);
+          return;
+        }
+
+        const faceUpCard = player.faceUpCards && player.faceUpCards.length > 0
           ? player.faceUpCards[player.faceUpCards.length - 1]
           : null;
 
