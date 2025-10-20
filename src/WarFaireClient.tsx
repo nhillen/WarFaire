@@ -632,21 +632,21 @@ export default function WarFaireClient({
                       onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                     >
                       <div className="left">
+                        {/* P0: Scoring dot - show if this category scores this round */}
+                        {currentRound <= 3 && <div className="scoring-dot"></div>}
                         <img className="icon-24" src={getCardArt(cat.name.toLowerCase())} alt="" />
-                        <div>
+                        <div className="name-group">
                           <div className="name">{cat.name}</div>
                           <div className="sub">{cat.group}</div>
                         </div>
                       </div>
                       <div className="right">
+                        {/* P0: Simplified right side - just leader chip and delta */}
                         {leaders.length > 0 && (
                           <>
-                            <div className="leader-chip">
-                              <div className="avatar">{leaders[0].name.charAt(0)}</div>
-                              <div className="points">{leaders[0].score}</div>
-                            </div>
+                            <LeaderChip avatarText={leaders[0].name.charAt(0)} points={leaders[0].score} />
                             {leaders.length > 1 && (
-                              <div className="sub">+{leaders[0].score - leaders[1].score}</div>
+                              <div className="delta">+{leaders[0].score - leaders[1].score}</div>
                             )}
                           </>
                         )}
@@ -682,24 +682,33 @@ export default function WarFaireClient({
                             <thead className="sticky top-0 border-b-2 border-slate-300" style={{ backgroundColor: 'rgba(241, 245, 249, 0.98)' }}>
                               <tr>
                                 <th className="text-left px-4 py-2 font-semibold text-slate-900">Player</th>
-                                <th className="text-right px-4 py-2 font-semibold text-slate-900">Points</th>
+                                <th className="text-right px-4 py-2 font-semibold text-slate-900">Total</th>
+                                <th className="text-right px-4 py-2 font-semibold text-slate-900">Round Δ</th>
                               </tr>
                             </thead>
                             <tbody>
+                              {/* P1: Your standing - sticky first row if player exists in this category */}
+                              {allScores.find(p => p.playerId === meId) && (() => {
+                                const myScore = allScores.find(p => p.playerId === meId)!;
+                                return (
+                                  <tr className="sticky top-[33px] z-10 popover-your-standing border-b-2 border-slate-300">
+                                    <td className="px-4 py-2 font-bold text-slate-900">You</td>
+                                    <td className="px-4 py-2 text-right font-bold text-slate-900">{myScore.score}</td>
+                                    <td className="px-4 py-2 text-right font-semibold text-green-700">
+                                      {myScore.delta > 0 ? `+${myScore.delta}` : myScore.delta}
+                                    </td>
+                                  </tr>
+                                );
+                              })()}
                               {allScores.map((player, idx) => (
                                 <tr
                                   key={player.playerId}
-                                  className={`border-t border-slate-200`}
-                                  style={{
-                                    backgroundColor: player.playerId === meId ? 'rgba(243, 232, 255, 0.98)' : 'rgba(255, 255, 255, 0.98)'
-                                  }}
+                                  className={`border-t border-slate-200 ${player.playerId === meId ? 'hidden' : ''}`}
                                 >
                                   <td className="px-4 py-2 font-medium text-slate-900">{player.name}</td>
-                                  <td className="px-4 py-2 text-right font-bold text-slate-900">
-                                    {player.score}
-                                    {player.delta > 0 && (
-                                      <span className="text-xs text-green-700 font-semibold ml-1">+{player.delta}</span>
-                                    )}
+                                  <td className="px-4 py-2 text-right font-bold text-slate-900">{player.score}</td>
+                                  <td className="px-4 py-2 text-right text-slate-600">
+                                    {player.delta > 0 && `+${player.delta}`}
                                   </td>
                                 </tr>
                               ))}
@@ -721,28 +730,32 @@ export default function WarFaireClient({
           <section className="section-board">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">Board</h2>
-              <div className="flex gap-2">
+              {/* P1: Tabs with consistent styling and aria-selected */}
+              <div className="tabs">
                 <button
                   onClick={() => setBoardTab('all')}
-                  className={`px-3 py-1 text-sm rounded ${boardTab === 'all' ? 'bg-purple-600 text-white' : 'bg-slate-200'}`}
+                  className="tab"
+                  aria-selected={boardTab === 'all'}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setBoardTab('you')}
-                  className={`px-3 py-1 text-sm rounded ${boardTab === 'you' ? 'bg-purple-600 text-white' : 'bg-slate-200'}`}
+                  className="tab"
+                  aria-selected={boardTab === 'you'}
                 >
                   You
                 </button>
                 <button
                   onClick={() => setBoardTab('rivals')}
-                  className={`px-3 py-1 text-sm rounded ${boardTab === 'rivals' ? 'bg-purple-600 text-white' : 'bg-slate-200'}`}
+                  className="tab"
+                  aria-selected={boardTab === 'rivals'}
                 >
                   Rivals
                 </button>
               </div>
             </div>
-            <div className="panel board-rows">
+            <div className="panel board-panel board-rows">
               {boardPlayers.map((seat: any) => {
                 const card = seat.currentFaceUpCard;
 
@@ -769,31 +782,38 @@ export default function WarFaireClient({
           {/* Hand Section */}
           <section className="section-hand">
             <div className="panel overflow-hidden">
-              <div className="border-b border-slate-200 px-4 pt-3 pb-0 flex gap-4">
-                <button
-                  onClick={() => setActiveTab('hand')}
-                  className={`pb-3 px-2 text-sm font-medium border-b-2 ${
-                    activeTab === 'hand' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-600'
-                  }`}
-                >
-                  Hand
-                </button>
-                <button
-                  onClick={() => setActiveTab('played')}
-                  className={`pb-3 px-2 text-sm font-medium border-b-2 ${
-                    activeTab === 'played' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-600'
-                  }`}
-                >
-                  Plays
-                </button>
+              <div className="px-4 pt-3 pb-0">
+                {/* P1: Tabs with consistent styling */}
+                <div className="tabs">
+                  <button
+                    onClick={() => setActiveTab('hand')}
+                    className="tab"
+                    aria-selected={activeTab === 'hand'}
+                  >
+                    Hand
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('played')}
+                    className="tab"
+                    aria-selected={activeTab === 'played'}
+                  >
+                    Plays
+                  </button>
+                </div>
+                {/* P0: Helper text under tabs */}
+                {activeTab === 'hand' && !waitingForOthers && myHand.length > 0 && (
+                  <div className="hand-helper">
+                    Play 1 face-up for this fair and 1 face-down for the next fair.
+                  </div>
+                )}
               </div>
 
               <div className="p-4">
                 {activeTab === 'hand' ? (
                   waitingForOthers ? (
-                    <p className="text-center py-6 text-sm text-slate-500">Waiting for others...</p>
+                    <div className="empty-state">Waiting for others...</div>
                   ) : myHand.length === 0 ? (
-                    <p className="text-center py-6 text-sm text-slate-500">No cards</p>
+                    <div className="empty-state">No cards in hand.</div>
                   ) : (
                     <div className="hand-grid">
                       {myHand.slice(0, 3).map((card, i) => {
@@ -816,7 +836,7 @@ export default function WarFaireClient({
                   )
                 ) : (
                   myPlayedCards.length === 0 ? (
-                    <p className="text-center py-6 text-sm text-slate-500">No plays yet</p>
+                    <div className="empty-state">No plays yet</div>
                   ) : (
                     <div className="grid grid-cols-6 gap-2">
                       {myPlayedCards.map((card, i) => {
@@ -893,9 +913,7 @@ export default function WarFaireClient({
             <button
               onClick={submitCards}
               disabled={!canSubmit}
-              className={`px-6 py-3 rounded-lg text-sm font-semibold ${
-                canSubmit ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-              }`}
+              className={`btn ${canSubmit ? 'btn-primary' : 'bg-slate-300 text-slate-500 cursor-not-allowed'}`}
               aria-label="Submit selected cards"
             >
               Submit
