@@ -868,16 +868,23 @@ export default function WarFaireClient({
 
                         return (
                           <div key={fairNum}>
-                            <div className="text-xs font-semibold text-slate-500 mb-2">Fair {fairNum}</div>
-                            <div className="grid grid-cols-6 gap-2">
+                            <div className="text-sm font-semibold text-slate-700 mb-3">Fair {fairNum}</div>
+                            <div className="grid grid-cols-3 gap-3">
                               {cardsInFair.map((card: any, i: number) => {
                                 const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
-                                const emoji = CATEGORY_EMOJIS[effectiveCategory] || '';
+                                const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
                                 return (
-                                  <div key={`${fairNum}-${i}`} className="border border-slate-200 rounded p-2 text-center bg-white">
-                                    <div className="text-sm">{emoji}</div>
-                                    <div className="text-base font-bold">{card.value}</div>
-                                    <div className="text-xs text-slate-400">R{card.playedAtRound}</div>
+                                  <div key={`${fairNum}-${i}`} className="relative">
+                                    <CardShell
+                                      categoryId={effectiveCategory.toLowerCase()}
+                                      name={effectiveCategory}
+                                      group={categoryInfo?.group}
+                                      value={card.value}
+                                      selected={false}
+                                    />
+                                    <div className="absolute bottom-1 right-1 bg-slate-800/80 text-white text-xs px-2 py-0.5 rounded">
+                                      Round {card.playedAtRound}
+                                    </div>
                                   </div>
                                 );
                               })}
