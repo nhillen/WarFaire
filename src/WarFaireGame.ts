@@ -97,6 +97,7 @@ export class WarFaireGame extends GameBase {
         seat.faceDownCards = [];
         seat.ribbons = [];
         seat.totalVP = 0;
+        seat.hasActed = false; // Reset hasActed for new game
       }
     });
 
@@ -180,6 +181,10 @@ export class WarFaireGame extends GameBase {
         seat.playedCards = wfPlayer.playedCards;
         seat.ribbons = wfPlayer.ribbons;
         seat.totalVP = wfPlayer.totalVP;
+
+        // Add face-up and face-down cards separately
+        (seat as any).faceUpCards = wfPlayer.faceUpCards || [];
+        (seat as any).faceDownCards = wfPlayer.faceDownCards || [];
 
         // Add current round's face-up card (last card in playedCards if any this round)
         const recentCards = wfPlayer.playedCards.slice(-1);
@@ -310,7 +315,7 @@ export class WarFaireGame extends GameBase {
         name: seat?.name
       });
 
-      if (seat && seat.isAI && !seat.hasFolded) {
+      if (seat && seat.isAI && !seat.hasFolded && !seat.hasActed) {
         const player = this.warfaireInstance!.players[index];
         console.log(`🎪 [AI] AI player ${seat.name} at seat ${index} has ${player.hand.length} cards`);
 
