@@ -134,20 +134,33 @@ export class WarFaireGame extends GameBase {
       player.currentRound = this.currentRound;
     }
 
-    // Flip face-down cards
-    for (const player of this.warfaireInstance.players) {
-      if (player.faceDownCards.length > 0) {
-        player.flipFaceDownCards();
+    // In Fair 2+, flip face-down cards from previous fair that match this round
+    if (this.currentFair > 1) {
+      for (const player of this.warfaireInstance.players) {
+        const cardToFlip = player.faceDownCards.find(
+          (card: any) => card.playedFaceDownAtFair === this.currentFair - 1 &&
+                        card.playedFaceDownAtRound === this.currentRound
+        );
+        if (cardToFlip) {
+          const index = player.faceDownCards.indexOf(cardToFlip);
+          player.faceDownCards.splice(index, 1);
+          player.addToHand(cardToFlip);
+          console.log(`🎪 ${player.name} flips face-down card from Fair ${this.currentFair - 1} Round ${this.currentRound}`);
+        }
       }
     }
 
-    // Deal cards to each player
-    for (const player of this.warfaireInstance.players) {
-      for (let i = 0; i < 3; i++) {
-        if (this.warfaireInstance.deck.length > 0) {
-          player.addToHand(this.warfaireInstance.deck.pop());
+    // Deal cards to each player (unless Fair 3)
+    if (this.currentFair < 3) {
+      for (const player of this.warfaireInstance.players) {
+        for (let i = 0; i < 3; i++) {
+          if (this.warfaireInstance.deck.length > 0) {
+            player.addToHand(this.warfaireInstance.deck.pop());
+          }
         }
       }
+    } else {
+      console.log(`🎪 Fair 3 - no drawing, only playing face-down cards from Fair 2`);
     }
 
     // Update game state phase
@@ -264,12 +277,13 @@ export class WarFaireGame extends GameBase {
     try {
       const { faceUpCard, faceDownCard, groupSelections } = data;
 
-      console.log(`🎪 Received play_cards from ${playerId}:`, { faceUpCard, faceDownCard });
+      console.log(`🎪 Received play_cards from ${playerId}:`, { faceUpCard, faceDownCard, fair: this.currentFair });
 
     // Store pending action
+    // In Fair 3, faceDownCard will be null/undefined
     this.pendingActions.set(playerId, {
       faceUpCard,
-      faceDownCard,
+      faceDownCard: this.currentFair < 3 ? faceDownCard : null,
       groupSelections
     });
 
@@ -326,7 +340,8 @@ export class WarFaireGame extends GameBase {
         const player = this.warfaireInstance!.players[index];
         console.log(`🎪 [AI] AI player ${seat.name} at seat ${index} has ${player.hand.length} cards`);
 
-        if (player.hand.length >= 2) {
+        const minCards = this.currentFair < 3 ? 2 : 1; // Fair 3 only needs 1 card
+        if (player.hand.length >= minCards) {
           console.log(`🎪 [AI] AI player ${seat.name} is playing cards...`);
 
           // Random AI selection (same as game.js)
@@ -348,8 +363,8 @@ export class WarFaireGame extends GameBase {
           player.playCardFaceUp(faceUpCard);
           console.log(`🎪 [AI] AI ${seat.name} played face-up: ${faceUpCard.category} (${faceUpCard.value})`);
 
-          // Play face-down
-          if (player.hand.length > 0) {
+          // Play face-down only in Fairs 1 and 2
+          if (this.currentFair < 3 && player.hand.length > 0) {
             const faceDownCard = player.hand[Math.floor(Math.random() * player.hand.length)];
 
             // Handle group cards for face-down
@@ -365,14 +380,14 @@ export class WarFaireGame extends GameBase {
             }
 
             player.playCardFaceDown(faceDownCard);
-            console.log(`🎪 [AI] AI ${seat.name} played face-down: ${faceDownCard.category} (${faceDownCard.value})`);
+            console.log(`🎪 [AI] AI ${seat.name} played face-down for Fair ${this.currentFair + 1}: ${faceDownCard.category} (${faceDownCard.value})`);
           }
 
           seat.hasActed = true;
           aiActionsCount++;
           console.log(`🎪 [AI] AI ${seat.name} has acted (total AI actions: ${aiActionsCount})`);
         } else {
-          console.log(`🎪 [AI] AI player ${seat.name} doesn't have enough cards (${player.hand.length} < 2)`);
+          console.log(`🎪 [AI] AI player ${seat.name} doesn't have enough cards (${player.hand.length} < ${minCards})`);
         }
       }
     });
@@ -433,23 +448,28 @@ export class WarFaireGame extends GameBase {
         c.value === action.faceUpCard.value
       );
 
-      const faceDownCard = player.hand.find((c: any) =>
+      // In Fair 3, there's no face-down card
+      const faceDownCard = action.faceDownCard ? player.hand.find((c: any) =>
         c.category === action.faceDownCard.category &&
         c.value === action.faceDownCard.value &&
         c !== faceUpCard
-      );
+      ) : null;
 
-      if (faceUpCard && faceDownCard) {
+      if (faceUpCard) {
         // Apply group selections
         if (faceUpCard.isGroupCard && action.groupSelections?.faceUp) {
           faceUpCard.selectedCategory = action.groupSelections.faceUp;
         }
-        if (faceDownCard.isGroupCard && action.groupSelections?.faceDown) {
-          faceDownCard.selectedCategory = action.groupSelections.faceDown;
-        }
 
         player.playCardFaceUp(faceUpCard);
-        player.playCardFaceDown(faceDownCard);
+
+        // Only play face-down in Fairs 1 and 2
+        if (faceDownCard) {
+          if (faceDownCard.isGroupCard && action.groupSelections?.faceDown) {
+            faceDownCard.selectedCategory = action.groupSelections.faceDown;
+          }
+          player.playCardFaceDown(faceDownCard);
+        }
       }
     }
 

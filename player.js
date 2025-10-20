@@ -39,6 +39,9 @@ export class Player {
 
   playCardFaceDown(card) {
     if (this.removeFromHand(card)) {
+      // Tag the card with which round it was played
+      card.playedFaceDownAtFair = this.currentFair;
+      card.playedFaceDownAtRound = this.currentRound;
       this.faceDownCards.push(card);
       return true;
     }

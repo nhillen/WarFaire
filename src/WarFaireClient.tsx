@@ -326,14 +326,20 @@ export default function WarFaireClient({
                       )}
                     </div>
 
-                    {/* Face-Down Card */}
+                    {/* Face-Down Card - only show details for my cards */}
                     <div>
                       <div className="text-xs font-semibold text-slate-500 mb-1">FACE-DOWN (Future)</div>
-                      {play.faceDownCard ? (
+                      {play.faceDownCard && play.playerId === meId ? (
                         <div className="flex items-center gap-2 px-3 py-2 bg-slate-200 border border-slate-400 rounded-lg">
                           <span className="text-lg">{CATEGORY_EMOJIS[play.faceDownCard.category] || '🎪'}</span>
                           <span className="font-semibold">{play.faceDownCard.category}</span>
                           <span className="text-lg font-bold text-slate-700 ml-auto">{play.faceDownCard.value}</span>
+                        </div>
+                      ) : play.faceDownCard ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-200 border border-slate-400 rounded-lg">
+                          <span className="text-lg">🎴</span>
+                          <span className="font-semibold text-slate-600">Hidden</span>
+                          <span className="text-lg font-bold text-slate-700 ml-auto">?</span>
                         </div>
                       ) : (
                         <div className="text-sm text-slate-400 italic">No card played</div>
@@ -826,6 +832,7 @@ export default function WarFaireClient({
 
                 // Show face-down cards for next fair
                 const faceDownCards = (seat as any).faceDownCards || [];
+                const isMyCards = seat.playerId === meId;
 
                 return (
                   <div key={seat.playerId} className="row">
@@ -841,12 +848,24 @@ export default function WarFaireClient({
                           value={card.value}
                         />
                       ))}
-                      {faceDownCards.length > 0 && faceDownCards.map((_: any, idx: number) => (
-                        <div key={`down-${idx}`} className="mini-chip">
-                          <img src="/assets/card_art/card_back.png" alt="Face-down card" />
-                          <span className="val">?</span>
-                        </div>
-                      ))}
+                      {faceDownCards.length > 0 && (
+                        isMyCards ? (
+                          // Show my face-down cards with details
+                          faceDownCards.map((card: any, idx: number) => (
+                            <MiniCardChip
+                              key={`down-${idx}`}
+                              categoryId={card.category ? card.category.toLowerCase() : 'unknown'}
+                              value={card.value}
+                            />
+                          ))
+                        ) : (
+                          // Show opponent face-down cards as count only
+                          <div className="mini-chip">
+                            <img src="/assets/card_art/card_back.png" alt="Face-down cards" />
+                            <span className="val">{faceDownCards.length}</span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 );

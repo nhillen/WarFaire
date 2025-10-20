@@ -53,24 +53,9 @@ export class Game {
     this.deck = shuffleDeck(createDeck(activeCategoryKeys));
     this.log(`Deck created with ${this.deck.length} cards`);
 
-    // Each player draws 3 cards and places them face-down
-    this.log('\nInitial face-down cards:');
-    for (const player of this.players) {
-      for (let i = 0; i < 3; i++) {
-        if (this.deck.length > 0) {
-          const card = this.deck.pop();
-          // Handle group cards - for setup, randomly assign to valid category
-          if (card.isGroupCard) {
-            const validCategories = this.activeCategories.filter(c => c.group === card.category);
-            if (validCategories.length > 0) {
-              card.selectedCategory = validCategories[Math.floor(Math.random() * validCategories.length)].name;
-            }
-          }
-          player.faceDownCards.push(card);
-        }
-      }
-      this.log(`  ${player.name}: ${player.faceDownCards.length} cards`);
-    }
+    // No initial face-down cards - players start with empty hands
+    // Face-down cards will be created when players play them
+    this.log('\nNo initial face-down cards - will be created during play');
 
     this.fairNumber = 1;
   }
@@ -80,28 +65,41 @@ export class Game {
     this.roundNumber++;
     this.log(`\n--- Round ${this.roundNumber} ---`);
 
-    // Step 1: Flip face-down cards
-    for (const player of this.players) {
-      if (player.faceDownCards.length > 0) {
-        const flipped = player.flipFaceDownCards();
-        this.log(`${player.name} flips ${flipped.length} face-down card(s)`);
-      }
-    }
-
-    // Step 2: Each player draws 3 cards
-    for (const player of this.players) {
-      for (let i = 0; i < 3; i++) {
-        if (this.deck.length > 0) {
-          player.addToHand(this.deck.pop());
+    // Step 1: In Fair 2+, flip face-down cards from previous fair that match this round
+    if (this.fairNumber > 1) {
+      for (const player of this.players) {
+        const cardToFlip = player.faceDownCards.find(
+          card => card.playedFaceDownAtFair === this.fairNumber - 1 &&
+                 card.playedFaceDownAtRound === this.roundNumber
+        );
+        if (cardToFlip) {
+          // Remove from faceDownCards and add to hand
+          const index = player.faceDownCards.indexOf(cardToFlip);
+          player.faceDownCards.splice(index, 1);
+          player.addToHand(cardToFlip);
+          this.log(`${player.name} flips face-down card from Fair ${this.fairNumber - 1} Round ${this.roundNumber}`);
         }
       }
-      this.log(`${player.name} draws 3 cards (hand: ${player.hand.length})`);
     }
 
-    // Step 3: Each player plays 1 face-up and 1 face-down
+    // Step 2: Each player draws 3 cards (unless Fair 3)
+    if (this.fairNumber < 3) {
+      for (const player of this.players) {
+        for (let i = 0; i < 3; i++) {
+          if (this.deck.length > 0) {
+            player.addToHand(this.deck.pop());
+          }
+        }
+        this.log(`${player.name} draws 3 cards (hand: ${player.hand.length})`);
+      }
+    } else {
+      this.log(`Fair 3 - no drawing, only playing face-down cards from Fair 2`);
+    }
+
+    // Step 3: Each player plays 1 face-up and (in Fairs 1-2) 1 face-down
     // For prototype, we'll do random selection
     for (const player of this.players) {
-      if (player.hand.length >= 2) {
+      if (player.hand.length >= 1) {
         // Play face-up
         const faceUpCard = player.hand[Math.floor(Math.random() * player.hand.length)];
         // Handle group cards
@@ -114,8 +112,8 @@ export class Game {
         player.playCardFaceUp(faceUpCard);
         this.log(`${player.name} plays ${faceUpCard.getDisplayName()} (${faceUpCard.value}) face-up`);
 
-        // Play face-down
-        if (player.hand.length > 0) {
+        // Play face-down only in Fairs 1 and 2
+        if (this.fairNumber < 3 && player.hand.length > 0) {
           const faceDownCard = player.hand[Math.floor(Math.random() * player.hand.length)];
           // Handle group cards
           if (faceDownCard.isGroupCard) {
@@ -125,7 +123,7 @@ export class Game {
             }
           }
           player.playCardFaceDown(faceDownCard);
-          this.log(`${player.name} plays 1 card face-down`);
+          this.log(`${player.name} plays 1 card face-down (for Fair ${this.fairNumber + 1} Round ${this.roundNumber})`);
         }
       }
     }
