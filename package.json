@@ -1,6 +1,6 @@
 {
   "name": "@pirate/game-warfaire",
-  "version": "0.2.21",
+  "version": "0.2.22",
   "description": "War Faire card game for Pirate Platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
     "start": "node index.js",
     "server": "node server.js",
     "test": "node test.js",
-    "build": "tsc && cp manifest.json dist/",
+    "build": "tsc && cp manifest.json dist/ && mkdir -p dist/styles && cp src/styles/presentation.css dist/styles/",
     "publish:verdaccio": "npm publish --registry http://vps-0b87e710.tail751d97.ts.net:4873/"
   },
   "dependencies": {
