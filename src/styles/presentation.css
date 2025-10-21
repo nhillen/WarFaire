@@ -326,11 +326,11 @@ img { max-width: 100%; height: auto; }
   align-items: center;
 }
 
-/* Hand area shows exactly 3 cards with fixed size */
+/* Hand area shows up to 4 cards with reduced spacing */
 .hand-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-16);
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-8);
 }
 
 .hand-grid .card {

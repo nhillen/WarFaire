@@ -86,6 +86,9 @@ export default function WarFaireClient({
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
 
+  // ===== GROUP CARD CATEGORY SELECTION =====
+  const [groupSelections, setGroupSelections] = useState<{ slotA?: string; slotB?: string }>({});
+
   // ===== DERIVED DATA FROM EXISTING PROPS =====
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
   const myHand = mySeat?.hand || [];
@@ -156,6 +159,7 @@ export default function WarFaireClient({
     setSlotA(null);
     setSlotB(null);
     setIsFaceUp(true);
+    setGroupSelections({});
   }, [currentRound, currentFair]);
 
   // ===== EXISTING HANDLERS - DO NOT MODIFY =====
@@ -178,21 +182,40 @@ export default function WarFaireClient({
   const clearSelection = () => {
     setSlotA(null);
     setSlotB(null);
+    setGroupSelections({});
   };
 
   const submitCards = () => {
     if (!slotA || !slotB) {
       return;
     }
+
+    // Build group selections object
+    const faceUpCard = isFaceUp ? slotA.card : slotB.card;
+    const faceDownCard = isFaceUp ? slotB.card : slotA.card;
+    const selections: { faceUp?: string; faceDown?: string } = {};
+
+    if (faceUpCard.isGroupCard) {
+      const slotKey = isFaceUp ? 'slotA' : 'slotB';
+      selections.faceUp = groupSelections[slotKey] || faceUpCard.getEffectiveCategory?.() || faceUpCard.category;
+    }
+
+    if (faceDownCard.isGroupCard) {
+      const slotKey = isFaceUp ? 'slotB' : 'slotA';
+      selections.faceDown = groupSelections[slotKey] || faceDownCard.getEffectiveCategory?.() || faceDownCard.category;
+    }
+
     onPlayerAction('play_cards', {
-      faceUpCard: isFaceUp ? slotA.card : slotB.card,
-      faceDownCard: isFaceUp ? slotB.card : slotA.card,
-      groupSelections: {}
+      faceUpCard,
+      faceDownCard,
+      groupSelections: selections
     });
     clearSelection();
   };
 
-  const canSubmit = slotA && slotB;
+  const canSubmit = slotA && slotB &&
+    (!slotA.card.isGroupCard || groupSelections.slotA) &&
+    (!slotB.card.isGroupCard || groupSelections.slotB);
 
   // ===== LOADING STATE =====
   if (!game) {
@@ -1063,6 +1086,45 @@ export default function WarFaireClient({
             >
               {isFaceUp ? 'A Face-Up' : 'B Face-Up'}
             </button>
+
+            {/* Group Card Category Selection */}
+            {slotA && slotA.card.isGroupCard && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-slate-700">Slot A Category:</label>
+                <select
+                  value={groupSelections.slotA || ''}
+                  onChange={(e) => setGroupSelections(prev => ({ ...prev, slotA: e.target.value }))}
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                >
+                  <option value="">Choose...</option>
+                  {activeCategories
+                    .filter(cat => cat.group === slotA.card.category)
+                    .map(cat => (
+                      <option key={cat.name} value={cat.name}>{cat.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+            )}
+
+            {slotB && slotB.card.isGroupCard && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-slate-700">Slot B Category:</label>
+                <select
+                  value={groupSelections.slotB || ''}
+                  onChange={(e) => setGroupSelections(prev => ({ ...prev, slotB: e.target.value }))}
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                >
+                  <option value="">Choose...</option>
+                  {activeCategories
+                    .filter(cat => cat.group === slotB.card.category)
+                    .map(cat => (
+                      <option key={cat.name} value={cat.name}>{cat.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+            )}
 
             {/* Submit */}
             <button
