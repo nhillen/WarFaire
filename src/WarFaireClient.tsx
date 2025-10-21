@@ -131,6 +131,18 @@ export default function WarFaireClient({
 
   // Combine regular face-down cards with the card being flipped (if any)
   const allMyFaceDownCards = [...myFaceDownCards];
+
+  // Debug logging
+  console.log('🎴 [CLIENT DEBUG] Face-down cards state:', {
+    phase: game?.phase,
+    isGroupSelection: game?.phase.includes('GroupSelection'),
+    myFaceDownCards: myFaceDownCards.length,
+    cardsToFlip: cardsToFlip.length,
+    cardsToFlipData: cardsToFlip.map((c: any) => ({ playerId: c.playerId.slice(0, 8), card: c.card.category })),
+    myCardBeingFlipped: myCardBeingFlipped ? myCardBeingFlipped.card.category : 'none',
+    allMyFaceDownCardsBefore: allMyFaceDownCards.length
+  });
+
   if (myCardBeingFlipped?.card) {
     // Reconstruct the card object with the metadata needed for display
     allMyFaceDownCards.push({
@@ -141,6 +153,7 @@ export default function WarFaireClient({
         return this.selectedCategory || this.category;
       }
     });
+    console.log('🎴 [CLIENT DEBUG] Added card being flipped, now have:', allMyFaceDownCards.length, 'cards');
   }
 
   // ===== SEAT SELECTION HANDLER =====

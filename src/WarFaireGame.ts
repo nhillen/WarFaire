@@ -183,7 +183,35 @@ export class WarFaireGame extends GameBase {
         selected: card.selectedCategory || 'none'
       })));
 
-      // Enter group card selection phase
+      // Check if all selections are complete (all group cards have selectedCategory)
+      // AI selections are already done above, so just check if all group cards have a selection
+      const allSelected = cardsToFlip.every(({ card }) =>
+        !card.isGroupCard || card.selectedCategory
+      );
+
+      console.log(`🎪 [CHECK] Selection status:`, {
+        allSelected,
+        totalCards: cardsToFlip.length,
+        groupCards: cardsToFlip.filter(({ card }) => card.isGroupCard).length,
+        aiGroupCards: cardsToFlip.filter(({ player, card }) => player.isAI && card.isGroupCard).length,
+        humanGroupCards: cardsToFlip.filter(({ player, card }) => !player.isAI && card.isGroupCard).length,
+        selectedGroupCards: cardsToFlip.filter(({ card }) => card.isGroupCard && card.selectedCategory).length,
+        unselectedGroupCards: cardsToFlip.filter(({ card }) => card.isGroupCard && !card.selectedCategory).map(({ player, card }) => ({
+          player: player.name,
+          isAI: player.isAI,
+          category: card.category
+        }))
+      });
+
+      if (allSelected) {
+        console.log(`🎪 ✅ All players ready (all group cards selected), proceeding immediately with flip`);
+        // All selections made, proceed with flipping immediately without entering GroupSelection phase
+        this.flipCardsAndContinue(cardsToFlip);
+        return;
+      }
+
+      // Not all selections complete, enter group card selection phase and wait for humans
+      console.log(`🎪 Entering GroupSelection phase - waiting for human players`);
       this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}GroupSelection`;
       (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player, card }) => ({
         playerId: player.id,
@@ -196,21 +224,6 @@ export class WarFaireGame extends GameBase {
       }));
       this.syncWarFaireStateToSeats();
       this.broadcastGameState();
-
-      // Check if all selections are complete (all group cards have selectedCategory)
-      // AI selections are already done above, so just check if all group cards have a selection
-      const allSelected = cardsToFlip.every(({ card }) =>
-        !card.isGroupCard || card.selectedCategory
-      );
-
-      console.log(`🎪 [CHECK] All selected? ${allSelected}`);
-
-      if (allSelected) {
-        console.log(`🎪 All players ready (AI auto-selected), proceeding immediately with flip`);
-        // All selections made, proceed with flipping
-        this.flipCardsAndContinue(cardsToFlip);
-        return;
-      }
 
       // We'll wait for human players to submit their selections via handlePlayerAction
       const pendingHumans = cardsToFlip.filter(({ player, card }) =>
