@@ -256,7 +256,7 @@ input[type="text"]:focus {
 }
 
 .cards-area {
-  min-height: 100px;
+  min-height: 180px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -266,7 +266,7 @@ input[type="text"]:focus {
 }
 
 .cards-hand {
-  min-height: 150px;
+  min-height: 180px;
 }
 
 .card {
