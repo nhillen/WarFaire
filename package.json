@@ -1,6 +1,6 @@
 {
   "name": "@pirate/game-warfaire",
-  "version": "0.2.40",
+  "version": "0.2.41",
   "description": "War Faire card game for Pirate Platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -855,7 +855,7 @@ export default function WarFaireClient({
                           // Show my face-down cards with details
                           <MiniCardChip
                             key={`down-${idx}`}
-                            categoryId={card.category ? card.category.toLowerCase() : 'unknown'}
+                            categoryId={card.getEffectiveCategory ? card.getEffectiveCategory().toLowerCase() : (card.category ? card.category.toLowerCase() : 'unknown')}
                             value={card.value}
                           />
                         ) : (
