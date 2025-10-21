@@ -103,6 +103,26 @@ export default function WarFaireClient({
   const currentFair = game?.currentFair || 1;
   const currentRound = game?.currentRound || 1;
 
+  // During GroupSelection phase, include the card being flipped
+  const cardsToFlip = (game as any)?.cardsToFlip || [];
+  const myCardBeingFlipped = game?.phase.includes('GroupSelection')
+    ? cardsToFlip.find((c: any) => c.playerId === meId)
+    : null;
+
+  // Combine regular face-down cards with the card being flipped (if any)
+  const allMyFaceDownCards = [...myFaceDownCards];
+  if (myCardBeingFlipped?.card) {
+    // Reconstruct the card object with the metadata needed for display
+    allMyFaceDownCards.push({
+      ...myCardBeingFlipped.card,
+      playedFaceDownAtFair: currentFair === 1 ? 0 : currentFair - 1,
+      playedFaceDownAtRound: currentRound,
+      getEffectiveCategory: function() {
+        return this.selectedCategory || this.category;
+      }
+    });
+  }
+
   // ===== SEAT SELECTION HANDLER =====
   const handleSeatClick = (seatIndex: number, seat: any) => {
     // If seat is occupied, do nothing
@@ -792,9 +812,9 @@ export default function WarFaireClient({
         let score = categoryCards.reduce((sum, card) => sum + card.value, 0);
 
         // Add face-down cards ONLY for the player themselves (not opponents)
+        // Use allMyFaceDownCards which includes the card being flipped during GroupSelection
         if (seat.playerId === meId) {
-          const faceDownCards = (seat as any).faceDownCards || [];
-          const faceDownCategoryCards = faceDownCards.filter((card: any) => {
+          const faceDownCategoryCards = allMyFaceDownCards.filter((card: any) => {
             const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
             return effectiveCategory === categoryName;
           });
@@ -1173,12 +1193,12 @@ export default function WarFaireClient({
                         );
                       })}
 
-                      {/* Face-down cards */}
-                      {myFaceDownCards.length > 0 && (
+                      {/* Face-down cards (includes card being flipped during GroupSelection) */}
+                      {allMyFaceDownCards.length > 0 && (
                         <div>
                           <div className="text-sm font-semibold text-slate-700 mb-3">Face-Down (Future Rounds)</div>
                           <div className="grid grid-cols-3 gap-3">
-                            {myFaceDownCards.map((card: any, i: number) => {
+                            {allMyFaceDownCards.map((card: any, i: number) => {
                               const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
                               const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
                               return (
@@ -1262,13 +1282,14 @@ export default function WarFaireClient({
             </button>
 
             {/* Group Card Category Selection */}
-            {slotA && slotA.card.isGroupCard && (
+            {/* Slot A selector only shows if slot A is face-down for next fair (when B is face-up) */}
+            {slotA && slotA.card.isGroupCard && !isFaceUp && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-slate-700">Slot A Category:</label>
                 <select
                   value={groupSelections.slotA || ''}
                   onChange={(e) => setGroupSelections(prev => ({ ...prev, slotA: e.target.value }))}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900"
                 >
                   <option value="">Choose...</option>
                   {activeCategories
@@ -1281,13 +1302,14 @@ export default function WarFaireClient({
               </div>
             )}
 
-            {slotB && slotB.card.isGroupCard && (
+            {/* Slot B selector only shows if slot B is face-down for next fair (when A is face-up) */}
+            {slotB && slotB.card.isGroupCard && isFaceUp && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-slate-700">Slot B Category:</label>
                 <select
                   value={groupSelections.slotB || ''}
                   onChange={(e) => setGroupSelections(prev => ({ ...prev, slotB: e.target.value }))}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900"
                 >
                   <option value="">Choose...</option>
                   {activeCategories
