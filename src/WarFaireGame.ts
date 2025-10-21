@@ -157,6 +157,7 @@ export class WarFaireGame extends GameBase {
 
     if (hasGroupCards) {
       // Auto-select for AI players BEFORE entering selection phase
+      console.log(`🎪 [AI] Auto-selecting for ${cardsToFlip.filter(({ player, card }) => player.isAI && card.isGroupCard).length} AI group cards...`);
       for (const { player, card } of cardsToFlip) {
         if (player.isAI && card.isGroupCard) {
           const validCategories = this.warfaireInstance.activeCategories.filter(
@@ -166,10 +167,20 @@ export class WarFaireGame extends GameBase {
             card.selectedCategory = validCategories[
               Math.floor(Math.random() * validCategories.length)
             ].name;
-            console.log(`🎪 [AI] ${player.name} auto-selected ${card.selectedCategory} for group card flip`);
+            console.log(`🎪 [AI] ${player.name} auto-selected ${card.selectedCategory} for ${card.category} group card`);
           }
         }
       }
+      console.log(`🎪 [AI] Auto-selection complete`);
+
+      // Log allcards and their selection status
+      console.log(`🎪 [CHECK] Card statuses:`, cardsToFlip.map(({ player, card }) => ({
+        player: player.name,
+        isAI: player.isAI,
+        category: card.category,
+        isGroup: card.isGroupCard,
+        selected: card.selectedCategory || 'none'
+      })));
 
       // Enter group card selection phase
       this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}GroupSelection`;
@@ -191,8 +202,10 @@ export class WarFaireGame extends GameBase {
         !card.isGroupCard || card.selectedCategory
       );
 
+      console.log(`🎪 [CHECK] All selected? ${allSelected}`);
+
       if (allSelected) {
-        console.log(`🎪 All players ready (AI auto-selected), proceeding with flip`);
+        console.log(`🎪 All players ready (AI auto-selected), proceeding immediately with flip`);
         // All selections made, proceed with flipping
         this.flipCardsAndContinue(cardsToFlip);
         return;
@@ -203,6 +216,14 @@ export class WarFaireGame extends GameBase {
         !player.isAI && card.isGroupCard && !card.selectedCategory
       );
       console.log(`🎪 Waiting for ${pendingHumans.length} human player(s) to select categories for group cards`);
+      if (pendingHumans.length > 0) {
+        console.log(`🎪 Pending humans:`, pendingHumans.map(({ player, card }) => ({
+          player: player.name,
+          playerId: player.id.slice(0, 8),
+          category: card.category,
+          value: card.value
+        })));
+      }
 
       // Set a 15-second timer to auto-select for any remaining human players
       if (this.groupSelectionTimer) {
@@ -240,17 +261,24 @@ export class WarFaireGame extends GameBase {
 
     const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
 
+    console.log(`🎪 [FLIP] Starting to flip ${cardsToFlip.length} cards...`);
+
     // Flip face-down cards → they become face-up played cards
     for (const { player, card } of cardsToFlip) {
       const index = player.faceDownCards.indexOf(card);
+      console.log(`🎪 [FLIP] ${player.name}: removing card at index ${index} from faceDownCards (${player.faceDownCards.length} total)`);
       player.faceDownCards.splice(index, 1);
+      console.log(`🎪 [FLIP] ${player.name}: playing ${card.category} ${card.value} face-up to board`);
       player.playCardFaceUp(card);  // PLAY to board, not add to hand!
+      console.log(`🎪 [FLIP] ${player.name}: now has ${player.faceDownCards.length} face-down cards, ${player.playedCards.length} played cards`);
       if (fairToFlipFrom === 0) {
-        console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound} to board`);
+        console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound} to board: ${card.category} ${card.value}`);
       } else {
-        console.log(`🎪 ${player.name} flips face-down card from Fair ${fairToFlipFrom} Round ${this.currentRound} to board`);
+        console.log(`🎪 ${player.name} flips face-down card from Fair ${fairToFlipFrom} Round ${this.currentRound} to board: ${card.category} ${card.value}`);
       }
     }
+
+    console.log(`🎪 [FLIP] All cards flipped`);
 
     // Deal cards to each player (unless Fair 3)
     if (this.currentFair < 3) {
