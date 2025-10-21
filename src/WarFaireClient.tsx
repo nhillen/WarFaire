@@ -57,6 +57,26 @@ type WarFaireGameState = {
   currentRound?: number;
 };
 
+// Round Summary Overlay Component
+function RoundSummaryOverlay({ roundNumber, onContinue }: { roundNumber: number; onContinue: () => void }) {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onContinue();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [onContinue]);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-2xl px-12 py-8 animate-pulse">
+        <h2 className="text-4xl font-bold text-center text-purple-700">
+          Round {roundNumber} Complete!
+        </h2>
+      </div>
+    </div>
+  );
+}
+
 type WarFaireClientProps = {
   game: WarFaireGameState | null;
   meId: string;
@@ -457,15 +477,6 @@ export default function WarFaireClient({
     }
   }
 
-  // Auto-continue from round summary after 2 seconds
-  React.useEffect(() => {
-    if (game.phase.startsWith('RoundSummary')) {
-      const timer = setTimeout(() => {
-        onPlayerAction('continue_from_summary');
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [game.phase]);
 
   // ===== FAIR SUMMARY VIEW =====
   if (game.phase.startsWith('FairSummary')) {
@@ -1283,13 +1294,10 @@ export default function WarFaireClient({
 
       {/* Round Summary Overlay */}
       {game.phase.startsWith('RoundSummary') && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl px-12 py-8 animate-pulse">
-            <h2 className="text-4xl font-bold text-center text-purple-700">
-              Round {(game as any).completedRound || 1} Complete!
-            </h2>
-          </div>
-        </div>
+        <RoundSummaryOverlay
+          roundNumber={(game as any).completedRound || 1}
+          onContinue={() => onPlayerAction('continue_from_summary')}
+        />
       )}
     </div>
   );
