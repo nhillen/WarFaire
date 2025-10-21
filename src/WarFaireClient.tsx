@@ -946,7 +946,7 @@ export default function WarFaireClient({
                     <div className="empty-state">No cards in hand.</div>
                   ) : (
                     <div className="hand-grid">
-                      {myHand.slice(0, 3).map((card, i) => {
+                      {myHand.map((card, i) => {
                         const isSelected = slotA?.index === i || slotB?.index === i;
                         // Get effective category (handles group cards)
                         const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;

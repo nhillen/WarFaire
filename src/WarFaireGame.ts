@@ -197,7 +197,11 @@ export class WarFaireGame extends GameBase {
         seat.hand = wfPlayer.hand.map((c: any) => ({
           category: c.category,
           value: c.value,
-          isGroupCard: c.isGroupCard
+          isGroupCard: c.isGroupCard,
+          selectedCategory: c.selectedCategory,
+          getEffectiveCategory: c.isGroupCard && c.selectedCategory
+            ? () => c.selectedCategory
+            : () => c.category
         }));
         seat.playedCards = wfPlayer.playedCards;
         seat.ribbons = wfPlayer.ribbons;
