@@ -127,10 +127,11 @@ export class WarFaireGame extends GameBase {
   private startRound(): void {
     if (!this.warfaireInstance || !this.gameState) return;
 
-    this.currentRound++;
-    this.pendingActions.clear();
+    try {
+      this.currentRound++;
+      this.pendingActions.clear();
 
-    console.log(`🎪 Fair ${this.currentFair}, Round ${this.currentRound}`);
+      console.log(`🎪 Fair ${this.currentFair}, Round ${this.currentRound}`);
 
     // Update all players with current fair/round for metadata tracking
     for (const player of this.warfaireInstance.players) {
@@ -254,6 +255,11 @@ export class WarFaireGame extends GameBase {
 
     // No group cards, proceed with flipping
     this.flipCardsAndContinue(cardsToFlip);
+    } catch (error) {
+      console.error(`🎪 ERROR in startRound (Fair ${this.currentFair}, Round ${this.currentRound}):`, error);
+      console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      throw error;
+    }
   }
 
   private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>): void {
