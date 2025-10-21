@@ -411,7 +411,7 @@ export default function WarFaireClient({
             </div>
 
             <div className="mt-6 text-sm text-slate-500 text-center">
-              ⏱️ Auto-selects in 30 seconds
+              ⏱️ Auto-selects in 15 seconds
             </div>
           </div>
         </div>
@@ -434,7 +434,7 @@ export default function WarFaireClient({
                 : 'AI players are selecting categories for their group cards...'}
             </p>
             <div className="text-sm text-slate-400">
-              ⏱️ Will auto-select after 30 seconds
+              ⏱️ Will auto-select after 15 seconds
             </div>
             {isAdmin && (
               <div className="mt-6 p-4 bg-slate-800 rounded-lg">
@@ -844,10 +844,8 @@ export default function WarFaireClient({
     }
 
     if (boardTab === 'rivals') {
-      // Get top 2 by VP
-      const sorted = [...allPlayers].sort((a, b) => (b.totalVP || 0) - (a.totalVP || 0));
-      const topTwo = sorted.slice(0, 2).map(s => s.playerId);
-      return allPlayers.filter(s => s.playerId === meId || topTwo.includes(s.playerId));
+      // Show all players except me
+      return allPlayers.filter(s => s.playerId !== meId);
     }
 
     return allPlayers;

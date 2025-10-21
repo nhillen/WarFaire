@@ -204,7 +204,7 @@ export class WarFaireGame extends GameBase {
       );
       console.log(`🎪 Waiting for ${pendingHumans.length} human player(s) to select categories for group cards`);
 
-      // Set a 30-second timer to auto-select for any remaining human players
+      // Set a 15-second timer to auto-select for any remaining human players
       if (this.groupSelectionTimer) {
         clearTimeout(this.groupSelectionTimer);
       }
@@ -226,7 +226,7 @@ export class WarFaireGame extends GameBase {
         }
         // Proceed with flipping
         this.flipCardsAndContinue(cardsToFlip);
-      }, 30000); // 30 seconds
+      }, 15000); // 15 seconds
 
       return;
     }
