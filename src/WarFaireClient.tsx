@@ -457,85 +457,15 @@ export default function WarFaireClient({
     }
   }
 
-  // ===== ROUND SUMMARY VIEW =====
-  if (game.phase.startsWith('RoundSummary')) {
-    const roundPlays = (game as any).roundPlays || [];
-    const roundNumber = (game as any).completedRound || 1;
-
-    return (
-      <div className="h-full flex items-center justify-center bg-slate-50">
-        <div className="max-w-4xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-6">Round {roundNumber} Complete!</h1>
-
-          {/* Cards Played This Round */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Cards Played</h2>
-            <div className="space-y-3">
-              {roundPlays.map((play: any) => (
-                <div
-                  key={play.playerId}
-                  className={`p-4 rounded-lg border ${
-                    play.playerId === meId
-                      ? 'bg-blue-50 border-blue-300'
-                      : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-lg">{play.isAI ? '🤖' : '👤'}</span>
-                    <span className="font-semibold text-lg">{play.playerName}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Face-Up Card */}
-                    <div>
-                      <div className="text-xs font-semibold text-slate-500 mb-1">FACE-UP (Scoring)</div>
-                      {play.faceUpCard ? (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-green-100 border border-green-400 rounded-lg">
-                          <span className="text-lg">{CATEGORY_EMOJIS[play.faceUpCard.category] || '🎪'}</span>
-                          <span className="font-semibold">{play.faceUpCard.category}</span>
-                          <span className="text-lg font-bold text-green-700 ml-auto">{play.faceUpCard.value}</span>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-slate-400 italic">No card played</div>
-                      )}
-                    </div>
-
-                    {/* Face-Down Card - only show details for my cards */}
-                    <div>
-                      <div className="text-xs font-semibold text-slate-500 mb-1">FACE-DOWN (Future)</div>
-                      {play.faceDownCard && play.playerId === meId ? (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-200 border border-slate-400 rounded-lg">
-                          <span className="text-lg">{CATEGORY_EMOJIS[play.faceDownCard.category] || '🎪'}</span>
-                          <span className="font-semibold">{play.faceDownCard.category}</span>
-                          <span className="text-lg font-bold text-slate-700 ml-auto">{play.faceDownCard.value}</span>
-                        </div>
-                      ) : play.faceDownCard ? (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-slate-200 border border-slate-400 rounded-lg">
-                          <span className="text-lg">🎴</span>
-                          <span className="font-semibold text-slate-600">Hidden</span>
-                          <span className="text-lg font-bold text-slate-700 ml-auto">?</span>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-slate-400 italic">No card played</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Continue Button */}
-          <button
-            onClick={() => onPlayerAction('continue_from_summary')}
-            className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-lg"
-          >
-            {roundNumber >= 3 ? 'View Fair Results' : `Continue to Round ${roundNumber + 1}`}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Auto-continue from round summary after 2 seconds
+  React.useEffect(() => {
+    if (game.phase.startsWith('RoundSummary')) {
+      const timer = setTimeout(() => {
+        onPlayerAction('continue_from_summary');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [game.phase]);
 
   // ===== FAIR SUMMARY VIEW =====
   if (game.phase.startsWith('FairSummary')) {
@@ -1347,6 +1277,17 @@ export default function WarFaireClient({
             >
               Leave
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Round Summary Overlay */}
+      {game.phase.startsWith('RoundSummary') && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl px-12 py-8 animate-pulse">
+            <h2 className="text-4xl font-bold text-center text-purple-700">
+              Round {(game as any).completedRound || 1} Complete!
+            </h2>
           </div>
         </div>
       )}
