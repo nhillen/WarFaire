@@ -138,7 +138,10 @@ export default function WarFaireClient({
     isGroupSelection: game?.phase.includes('GroupSelection'),
     myFaceDownCards: myFaceDownCards.length,
     cardsToFlip: cardsToFlip.length,
-    cardsToFlipData: cardsToFlip.map((c: any) => ({ playerId: c.playerId.slice(0, 8), card: c.card.category })),
+    cardsToFlipData: cardsToFlip.map((c: any) => ({
+      playerId: typeof c.playerId === 'string' ? c.playerId.slice(0, 8) : c.playerId,
+      card: c.card?.category || 'unknown'
+    })),
     myCardBeingFlipped: myCardBeingFlipped ? myCardBeingFlipped.card.category : 'none',
     allMyFaceDownCardsBefore: allMyFaceDownCards.length
   });
