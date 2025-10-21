@@ -220,7 +220,7 @@ export class WarFaireGame extends GameBase {
       if (pendingHumans.length > 0) {
         console.log(`🎪 Pending humans:`, pendingHumans.map(({ player, card }) => ({
           player: player.name,
-          playerId: player.id.slice(0, 8),
+          playerId: typeof player.id === 'string' ? player.id.slice(0, 8) : player.id,
           category: card.category,
           value: card.value
         })));
