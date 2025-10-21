@@ -22,8 +22,7 @@ export const CATEGORIES = {
   // Livestock
   PIGS: { name: 'Pigs', group: GROUPS.LIVESTOCK },
   COWS: { name: 'Cows', group: GROUPS.LIVESTOCK },
-  CHICKENS: { name: 'Chickens', group: GROUPS.LIVESTOCK },
-  GOATS: { name: 'Goats', group: GROUPS.LIVESTOCK }
+  CHICKENS: { name: 'Chickens', group: GROUPS.LIVESTOCK }
 };
 
 // Card value distribution: 2,2,2,2,3,3,3,3,4,4,5,5,6

@@ -18,7 +18,6 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   'Pigs': '🐷',
   'Cows': '🐄',
   'Chickens': '🐔',
-  'Goats': '🐐',
   'Produce': '🌾',
   'Baking': '🧁',
   'Livestock': '🐮'
@@ -841,13 +840,16 @@ export default function WarFaireClient({
                     </div>
                     <span className="text-sm font-medium text-white">{seat.name}</span>
                     <div className="chips">
-                      {currentFairCards.length > 0 && currentFairCards.map((card: any, idx: number) => (
-                        <MiniCardChip
-                          key={`up-${idx}`}
-                          categoryId={card.category.toLowerCase()}
-                          value={card.value}
-                        />
-                      ))}
+                      {currentFairCards.length > 0 && currentFairCards.map((card: any, idx: number) => {
+                        const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                        return (
+                          <MiniCardChip
+                            key={`up-${idx}`}
+                            categoryId={effectiveCategory.toLowerCase()}
+                            value={card.value}
+                          />
+                        );
+                      })}
                       {faceDownCards.length > 0 && faceDownCards.map((card: any, idx: number) => (
                         isMyCards ? (
                           // Show my face-down cards with details
@@ -910,13 +912,16 @@ export default function WarFaireClient({
                     <div className="hand-grid">
                       {myHand.slice(0, 3).map((card, i) => {
                         const isSelected = slotA?.index === i || slotB?.index === i;
+                        // Get effective category (handles group cards)
+                        const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                        const displayName = card.isGroupCard ? `${card.category} (Group)` : card.category;
                         // Find the group for this category
-                        const categoryInfo = activeCategories.find(cat => cat.name === card.category);
+                        const categoryInfo = activeCategories.find(cat => cat.name === effectiveCategory);
                         return (
                           <CardShell
                             key={i}
-                            categoryId={card.category.toLowerCase()}
-                            name={card.category}
+                            categoryId={effectiveCategory.toLowerCase()}
+                            name={displayName}
                             group={categoryInfo?.group}
                             value={card.value}
                             selected={isSelected}
@@ -985,7 +990,7 @@ export default function WarFaireClient({
                 </div>
               ) : (
                 <div className="slot-mini">
-                  <img src={getCardArt(slotA.card.category.toLowerCase())} alt="" />
+                  <img src={getCardArt((slotA.card.getEffectiveCategory ? slotA.card.getEffectiveCategory() : slotA.card.category).toLowerCase())} alt="" />
                 </div>
               )
             ) : (
@@ -1003,7 +1008,7 @@ export default function WarFaireClient({
                 </div>
               ) : (
                 <div className="slot-mini">
-                  <img src={getCardArt(slotB.card.category.toLowerCase())} alt="" />
+                  <img src={getCardArt((slotB.card.getEffectiveCategory ? slotB.card.getEffectiveCategory() : slotB.card.category).toLowerCase())} alt="" />
                 </div>
               )
             ) : (
