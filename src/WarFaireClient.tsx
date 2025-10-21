@@ -115,6 +115,42 @@ export default function WarFaireClient({
     }
   };
 
+  // ===== DEBUG LOGGING =====
+  useEffect(() => {
+    if (mySeat) {
+      const faceUpCards = (mySeat as any).faceUpCards || [];
+      const faceDownCards = (mySeat as any).faceDownCards || [];
+
+      console.log('🐛 [DEBUG] My Card State:', {
+        phase: game?.phase,
+        fair: currentFair,
+        round: currentRound,
+        hand: myHand.map((c: any) => ({
+          category: c.getEffectiveCategory ? c.getEffectiveCategory() : c.category,
+          value: c.value,
+          isGroup: c.isGroupCard
+        })),
+        playedCards: myPlayedCards.map((c: any) => ({
+          category: c.getEffectiveCategory ? c.getEffectiveCategory() : c.category,
+          value: c.value,
+          fair: c.playedAtFair,
+          round: c.playedAtRound
+        })),
+        faceUpCards: faceUpCards.map((c: any) => ({
+          category: c.getEffectiveCategory ? c.getEffectiveCategory() : c.category,
+          value: c.value
+        })),
+        faceDownCards: faceDownCards.map((c: any) => ({
+          category: c.getEffectiveCategory ? c.getEffectiveCategory() : c.category,
+          value: c.value,
+          forFair: c.playedFaceDownAtFair,
+          forRound: c.playedFaceDownAtRound
+        })),
+        totalCards: myHand.length + myPlayedCards.length + faceUpCards.length + faceDownCards.length
+      });
+    }
+  }, [game, mySeat, myHand, myPlayedCards, currentFair, currentRound]);
+
   // ===== EXISTING RESET LOGIC - DO NOT MODIFY =====
   useEffect(() => {
     setSlotA(null);
