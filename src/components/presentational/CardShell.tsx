@@ -11,6 +11,7 @@ interface CardShellProps {
   value: number;
   name: string;
   group?: string;
+  isGroupCard?: boolean;
   selected?: boolean;
   onClick?: () => void;
 }
@@ -20,6 +21,7 @@ export function CardShell({
   value,
   name,
   group,
+  isGroupCard = false,
   selected = false,
   onClick
 }: CardShellProps) {
@@ -28,13 +30,13 @@ export function CardShell({
       <div className="top">
         <img className="cat-icon" src={getCardArt(categoryId)} alt="" />
         <div />
-        <div className="value-badge">{value}</div>
+        <div className="value-badge">{value}{isGroupCard ? '*' : ''}</div>
       </div>
       <div className="art">
         <img src={getCardArt(categoryId)} alt="" decoding="async" loading="lazy" />
       </div>
       <div className="namebar">
-        <div className="name">{name}</div>
+        <div className="name">{name}{isGroupCard ? ' *' : ''}</div>
         {group ? <div className="group">{group}</div> : null}
       </div>
     </div>

@@ -9,6 +9,8 @@ export class WarFaireGame extends GameBase {
   private currentFair: number = 0;
   private currentRound: number = 0;
   private aiTurnTimer: NodeJS.Timeout | null = null;
+  private groupSelectionTimer: NodeJS.Timeout | null = null;
+  private gameEndTimer: NodeJS.Timeout | null = null;
   private isProcessingRound: boolean = false;
 
   constructor(tableConfig: any) {
@@ -136,24 +138,117 @@ export class WarFaireGame extends GameBase {
       player.currentRound = this.currentRound;
     }
 
-    // Flip face-down card for this round
-    // Fair 1: Flip initial cards (Fair 0)
-    // Fair 2+: Flip cards from previous fair
+    // Check if any face-down cards to flip are group cards needing category selection
     const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
+    const cardsToFlip: Array<{ player: any; card: any }> = [];
+
     for (const player of this.warfaireInstance.players) {
       const cardToFlip = player.faceDownCards.find(
         (card: any) => card.playedFaceDownAtFair === fairToFlipFrom &&
                       card.playedFaceDownAtRound === this.currentRound
       );
       if (cardToFlip) {
-        const index = player.faceDownCards.indexOf(cardToFlip);
-        player.faceDownCards.splice(index, 1);
-        player.addToHand(cardToFlip);
-        if (fairToFlipFrom === 0) {
-          console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound}`);
-        } else {
-          console.log(`🎪 ${player.name} flips face-down card from Fair ${fairToFlipFrom} Round ${this.currentRound}`);
+        cardsToFlip.push({ player, card: cardToFlip });
+      }
+    }
+
+    // Check if any are group cards
+    const hasGroupCards = cardsToFlip.some(({ card }) => card.isGroupCard);
+
+    if (hasGroupCards) {
+      // Auto-select for AI players BEFORE entering selection phase
+      for (const { player, card } of cardsToFlip) {
+        if (player.isAI && card.isGroupCard) {
+          const validCategories = this.warfaireInstance.activeCategories.filter(
+            (c: any) => c.group === card.category
+          );
+          if (validCategories.length > 0) {
+            card.selectedCategory = validCategories[
+              Math.floor(Math.random() * validCategories.length)
+            ].name;
+            console.log(`🎪 [AI] ${player.name} auto-selected ${card.selectedCategory} for group card flip`);
+          }
         }
+      }
+
+      // Enter group card selection phase
+      this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}GroupSelection`;
+      (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player, card }) => ({
+        playerId: player.id,
+        card: {
+          category: card.category,
+          value: card.value,
+          isGroupCard: card.isGroupCard,
+          selectedCategory: card.selectedCategory
+        }
+      }));
+      this.syncWarFaireStateToSeats();
+      this.broadcastGameState();
+
+      // Check if all selections are complete (all group cards have selectedCategory)
+      // AI selections are already done above, so just check if all group cards have a selection
+      const allSelected = cardsToFlip.every(({ card }) =>
+        !card.isGroupCard || card.selectedCategory
+      );
+
+      if (allSelected) {
+        console.log(`🎪 All players ready (AI auto-selected), proceeding with flip`);
+        // All selections made, proceed with flipping
+        this.flipCardsAndContinue(cardsToFlip);
+        return;
+      }
+
+      // We'll wait for human players to submit their selections via handlePlayerAction
+      const pendingHumans = cardsToFlip.filter(({ player, card }) =>
+        !player.isAI && card.isGroupCard && !card.selectedCategory
+      );
+      console.log(`🎪 Waiting for ${pendingHumans.length} human player(s) to select categories for group cards`);
+
+      // Set a 30-second timer to auto-select for any remaining human players
+      if (this.groupSelectionTimer) {
+        clearTimeout(this.groupSelectionTimer);
+      }
+      this.groupSelectionTimer = setTimeout(() => {
+        console.log(`🎪 Group selection timeout - auto-selecting for remaining players`);
+        // Auto-select for any remaining group cards that don't have a selection
+        for (const { player, card } of cardsToFlip) {
+          if (card.isGroupCard && !card.selectedCategory) {
+            const validCategories = this.warfaireInstance!.activeCategories.filter(
+              (c: any) => c.group === card.category
+            );
+            if (validCategories.length > 0) {
+              card.selectedCategory = validCategories[
+                Math.floor(Math.random() * validCategories.length)
+              ].name;
+              console.log(`🎪 [TIMEOUT] Auto-selected ${card.selectedCategory} for ${player.name}'s group card`);
+            }
+          }
+        }
+        // Proceed with flipping
+        this.flipCardsAndContinue(cardsToFlip);
+      }, 30000); // 30 seconds
+
+      return;
+    }
+
+    // No group cards, proceed with flipping
+    this.flipCardsAndContinue(cardsToFlip);
+  }
+
+  private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>): void {
+    if (!this.warfaireInstance || !this.gameState) return;
+
+    const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
+
+    // Flip face-down cards → they become face-up played cards
+    for (const { player, card } of cardsToFlip) {
+      const index = player.faceDownCards.indexOf(card);
+      player.faceDownCards.splice(index, 1);
+      player.playCardFaceUp(card);  // PLAY to board, not add to hand!
+      if (fairToFlipFrom === 0) {
+        console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound} to board`);
+      } else {
+        console.log(`🎪 ${player.name} flips face-down card from Fair ${fairToFlipFrom} Round ${this.currentRound} to board`);
       }
     }
 
@@ -214,23 +309,6 @@ export class WarFaireGame extends GameBase {
         // Add current round's face-up card (last card in playedCards if any this round)
         const recentCards = wfPlayer.playedCards.slice(-1);
         (seat as any).currentFaceUpCard = recentCards.length > 0 ? recentCards[0] : null;
-
-        // Log player state for debugging
-        console.log(`🎪 [SYNC] Player ${seat.name} (${index}):`, {
-          handSize: seat.hand.length,
-          playedCardsCount: seat.playedCards.length,
-          playedCards: seat.playedCards.map((c: any) => ({
-            category: c.category || c.getEffectiveCategory?.(),
-            value: c.value,
-            fair: c.playedAtFair,
-            round: c.playedAtRound
-          })),
-          currentFaceUpCard: (seat as any).currentFaceUpCard ? {
-            category: (seat as any).currentFaceUpCard.category,
-            value: (seat as any).currentFaceUpCard.value
-          } : null,
-          totalVP: seat.totalVP
-        });
       }
     });
 
@@ -239,9 +317,6 @@ export class WarFaireGame extends GameBase {
     (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
     (this.gameState as any).currentFair = this.currentFair;
     (this.gameState as any).currentRound = this.currentRound;
-
-    console.log(`🎪 [SYNC] Active categories:`, this.warfaireInstance.activeCategories.map((c: any) => c.name));
-    console.log(`🎪 [SYNC] Category prestige:`, this.warfaireInstance.categoryPrestige);
   }
 
   handlePlayerAction(playerId: string, action: string, data?: any): void {
@@ -257,8 +332,63 @@ export class WarFaireGame extends GameBase {
         if (!this.warfaireInstance) return;
         this.handlePlayCards(playerId, data);
         break;
-      case 'select_category':
-        // Handle group card category selection
+      case 'select_flip_category':
+        // Handle group card category selection for face-down cards about to flip
+        if (this.gameState.phase.includes('GroupSelection') && data?.category) {
+          const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
+          const player = this.warfaireInstance?.players.find((p: any) => p.id === playerId);
+          if (player) {
+            const cardToFlip = player.faceDownCards.find(
+              (card: any) => card.playedFaceDownAtFair === fairToFlipFrom &&
+                            card.playedFaceDownAtRound === this.currentRound &&
+                            card.isGroupCard
+            );
+            if (cardToFlip) {
+              cardToFlip.selectedCategory = data.category;
+              console.log(`🎪 ${player.name} selected category ${data.category} for flip card`);
+
+              // Check if all players have selected
+              if (!this.warfaireInstance) return;
+              const cardsToFlip: Array<{ player: any; card: any }> = [];
+              for (const p of this.warfaireInstance.players) {
+                const card = p.faceDownCards.find(
+                  (c: any) => c.playedFaceDownAtFair === fairToFlipFrom &&
+                             c.playedFaceDownAtRound === this.currentRound
+                );
+                if (card) {
+                  cardsToFlip.push({ player: p, card });
+                }
+              }
+
+              // Update cardsToFlip in game state and broadcast
+              (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player: p, card }) => ({
+                playerId: p.id,
+                card: {
+                  category: card.category,
+                  value: card.value,
+                  isGroupCard: card.isGroupCard,
+                  selectedCategory: card.selectedCategory
+                }
+              }));
+              this.syncWarFaireStateToSeats();
+              this.broadcastGameState();
+
+              const allSelected = cardsToFlip.every(({ card }) =>
+                !card.isGroupCard || card.selectedCategory
+              );
+
+              if (allSelected) {
+                // Clear the timer since we're proceeding
+                if (this.groupSelectionTimer) {
+                  clearTimeout(this.groupSelectionTimer);
+                  this.groupSelectionTimer = null;
+                }
+                // All selections made, proceed with flipping
+                this.flipCardsAndContinue(cardsToFlip);
+              }
+            }
+          }
+        }
         break;
       case 'continue_from_summary':
         if (this.gameState.phase.startsWith('RoundSummary')) {
@@ -278,6 +408,11 @@ export class WarFaireGame extends GameBase {
         break;
       case 'return_to_lobby':
         if (this.gameState.phase === 'GameEnd') {
+          // Clear the auto-return timer since user manually returned
+          if (this.gameEndTimer) {
+            clearTimeout(this.gameEndTimer);
+            this.gameEndTimer = null;
+          }
           this.returnToLobby();
         }
         break;
@@ -609,10 +744,33 @@ export class WarFaireGame extends GameBase {
     console.log(`🎪 Entering GameEnd phase`);
 
     this.broadcastGameState();
+
+    // Set a 15-second timer to auto-return to lobby
+    if (this.gameEndTimer) {
+      clearTimeout(this.gameEndTimer);
+    }
+    this.gameEndTimer = setTimeout(() => {
+      console.log(`🎪 Auto-returning to lobby after game end`);
+      this.returnToLobby();
+    }, 15000); // 15 seconds
   }
 
   private returnToLobby(): void {
     if (!this.gameState) return;
+
+    // Clear any pending timers
+    if (this.gameEndTimer) {
+      clearTimeout(this.gameEndTimer);
+      this.gameEndTimer = null;
+    }
+    if (this.groupSelectionTimer) {
+      clearTimeout(this.groupSelectionTimer);
+      this.groupSelectionTimer = null;
+    }
+    if (this.aiTurnTimer) {
+      clearTimeout(this.aiTurnTimer);
+      this.aiTurnTimer = null;
+    }
 
     console.log(`🎪 Returning to lobby...`);
 

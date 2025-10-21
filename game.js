@@ -59,13 +59,7 @@ export class Game {
       for (let i = 0; i < 3; i++) {
         if (this.deck.length > 0) {
           const card = this.deck.pop();
-          // Handle group cards - for setup, randomly assign to valid category
-          if (card.isGroupCard) {
-            const validCategories = this.activeCategories.filter(c => c.group === card.category);
-            if (validCategories.length > 0) {
-              card.selectedCategory = validCategories[Math.floor(Math.random() * validCategories.length)].name;
-            }
-          }
+          // Group cards will have their category selected by the player before flipping
           // Tag as initial cards (Fair 0) for rounds 1, 2, 3
           card.playedFaceDownAtFair = 0;
           card.playedFaceDownAtRound = i + 1;

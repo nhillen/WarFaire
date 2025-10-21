@@ -64,6 +64,7 @@ type WarFaireClientProps = {
   onSitDown: (seatIndex: number, buyInAmount: number) => void;
   onStandUp: () => void;
   isSeated: boolean;
+  isAdmin?: boolean;
 };
 
 export default function WarFaireClient({
@@ -72,7 +73,8 @@ export default function WarFaireClient({
   onPlayerAction,
   onSitDown,
   onStandUp,
-  isSeated
+  isSeated,
+  isAdmin = false
 }: WarFaireClientProps) {
   // ===== EXISTING STATE - DO NOT MODIFY =====
   const [slotA, setSlotA] = useState<{ card: Card; index: number } | null>(null);
@@ -93,6 +95,7 @@ export default function WarFaireClient({
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
   const myHand = mySeat?.hand || [];
   const myPlayedCards = mySeat?.playedCards || [];
+  const myFaceDownCards = (mySeat as any)?.faceDownCards || [];
   const myTotalVP = mySeat?.totalVP || 0;
 
   const activeCategories = game?.activeCategories || [];
@@ -339,6 +342,99 @@ export default function WarFaireClient({
         </div>
       </div>
     );
+  }
+
+  // ===== GROUP CARD SELECTION PHASE =====
+  if (game.phase.includes('GroupSelection')) {
+    const cardsToFlip = (game as any).cardsToFlip || [];
+    const myCardToFlip = cardsToFlip.find((c: any) => c.playerId === meId);
+
+    console.log('🎪 [GROUP SELECTION]', {
+      phase: game.phase,
+      cardsToFlip: cardsToFlip.map((c: any) => ({
+        playerId: typeof c.playerId === 'string' ? c.playerId.slice(0, 8) : c.playerId,
+        isGroupCard: c.card?.isGroupCard,
+        category: c.card?.category,
+        value: c.card?.value
+      })),
+      myCardToFlip: myCardToFlip ? {
+        isGroupCard: myCardToFlip.card?.isGroupCard,
+        category: myCardToFlip.card?.category,
+        value: myCardToFlip.card?.value
+      } : null
+    });
+
+    if (myCardToFlip && myCardToFlip.card.isGroupCard) {
+      const validCategories = activeCategories.filter(cat => cat.group === myCardToFlip.card.category);
+
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
+            <h2 className="text-2xl font-bold mb-4">Select Category for Face-Down Card</h2>
+            <p className="text-slate-600 mb-6">
+              You have a <span className="font-bold">{myCardToFlip.card.category}</span> group card ({myCardToFlip.card.value})
+              that's about to be revealed. Choose which category it should count towards:
+            </p>
+
+            <div className="space-y-3">
+              {validCategories.map(cat => (
+                <button
+                  key={cat.name}
+                  onClick={() => {
+                    onPlayerAction('select_flip_category', { category: cat.name });
+                  }}
+                  className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg font-medium"
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 text-sm text-slate-500 text-center">
+              ⏱️ Auto-selects in 30 seconds
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      // No group card for me, just waiting
+      const groupCardPlayers = cardsToFlip.filter((c: any) => c.card?.isGroupCard);
+      const humanGroupCardPlayers = groupCardPlayers.filter((c: any) => {
+        const seat = game.seats.find((s: any) => s?.playerId === c.playerId);
+        return seat && !seat.isAI;
+      });
+
+      return (
+        <div className="h-full flex items-center justify-center bg-slate-900">
+          <div className="text-center max-w-md p-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Group Card Selection</h2>
+            <p className="text-lg text-slate-300 mb-6">
+              {humanGroupCardPlayers.length > 0
+                ? `Waiting for ${humanGroupCardPlayers.length} player(s) to select categories for their group cards...`
+                : 'AI players are selecting categories for their group cards...'}
+            </p>
+            <div className="text-sm text-slate-400">
+              ⏱️ Will auto-select after 30 seconds
+            </div>
+            {isAdmin && (
+              <div className="mt-6 p-4 bg-slate-800 rounded-lg">
+                <div className="text-xs text-slate-400 mb-2">Admin Info:</div>
+                <div className="text-xs text-left text-slate-300">
+                  {groupCardPlayers.map((c: any, idx: number) => {
+                    const seat = game.seats.find((s: any) => s?.playerId === c.playerId);
+                    return (
+                      <div key={idx}>
+                        {seat?.isAI ? '🤖' : '👤'} {seat?.name}: {c.card.category} {c.card.value}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
   }
 
   // ===== ROUND SUMMARY VIEW =====
@@ -590,16 +686,54 @@ export default function WarFaireClient({
 
   // ===== UNSEATED PLAYER VIEW (not in lobby and not seated) =====
   if (!isSeated && game.phase !== 'Lobby') {
+    const activePlayers = game.seats.filter(s => s && s.playerId);
+    const humanPlayers = activePlayers.filter(s => !s.isAI);
+    const aiPlayers = activePlayers.filter(s => s.isAI);
+
     return (
       <div className="h-full flex items-center justify-center bg-slate-50">
-        <div className="max-w-md w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Game in Progress</h2>
-          <p className="text-slate-600 mb-6">
+        <div className="max-w-2xl w-full bg-white rounded-lg border border-slate-300 shadow-lg p-8">
+          <h2 className="text-2xl font-bold mb-4 text-center">Game in Progress</h2>
+          <p className="text-slate-600 mb-6 text-center">
             A game is currently underway. Please wait for the current game to finish before joining.
           </p>
-          <div className="text-sm text-slate-500">
-            Phase: {game.phase}
+
+          <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+            <div className="text-sm font-semibold text-slate-700 mb-2">Phase: {game.phase}</div>
+            <div className="text-sm text-slate-600">
+              Players: {activePlayers.length} ({humanPlayers.length} human, {aiPlayers.length} AI)
+            </div>
           </div>
+
+          {isAdmin && (
+            <div className="space-y-4">
+              <div className="border-t border-slate-200 pt-4">
+                <h3 className="font-semibold text-slate-700 mb-3">Active Players:</h3>
+                <div className="space-y-2">
+                  {activePlayers.map((seat, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <span>{seat.isAI ? '🤖' : '👤'}</span>
+                        <span className="font-medium">{seat.name}</span>
+                        <span className="text-xs text-slate-500">({seat.playerId.slice(0, 8)})</span>
+                      </div>
+                      <span className="text-sm text-slate-600">{seat.totalVP || 0} VP</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-slate-200 pt-4">
+                <h3 className="font-semibold text-slate-700 mb-2">Admin Controls:</h3>
+                <button
+                  onClick={() => onPlayerAction('admin_reset_game')}
+                  className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                >
+                  Force Reset to Lobby
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -655,7 +789,17 @@ export default function WarFaireClient({
           return effectiveCategory === categoryName;
         });
 
-        const score = categoryCards.reduce((sum, card) => sum + card.value, 0);
+        let score = categoryCards.reduce((sum, card) => sum + card.value, 0);
+
+        // Add face-down cards ONLY for the player themselves (not opponents)
+        if (seat.playerId === meId) {
+          const faceDownCards = (seat as any).faceDownCards || [];
+          const faceDownCategoryCards = faceDownCards.filter((card: any) => {
+            const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+            return effectiveCategory === categoryName;
+          });
+          score += faceDownCategoryCards.reduce((sum: number, card: any) => sum + card.value, 0);
+        }
 
         // Calculate delta (cards played in current round)
         const delta = categoryCards
@@ -983,6 +1127,7 @@ export default function WarFaireClient({
                             name={displayName}
                             group={categoryInfo?.group}
                             value={card.value}
+                            isGroupCard={card.isGroupCard}
                             selected={isSelected}
                             onClick={() => selectCard(card, i)}
                           />
@@ -991,7 +1136,7 @@ export default function WarFaireClient({
                     </div>
                   )
                 ) : (
-                  myPlayedCards.length === 0 ? (
+                  myPlayedCards.length === 0 && myFaceDownCards.length === 0 ? (
                     <div className="empty-state">No plays yet</div>
                   ) : (
                     <div className="space-y-4">
@@ -1008,12 +1153,13 @@ export default function WarFaireClient({
                                 const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
                                 const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
                                 return (
-                                  <div key={`${fairNum}-${i}`} className="relative">
+                                  <div key={`up-${fairNum}-${i}`} className="relative">
                                     <CardShell
                                       categoryId={effectiveCategory.toLowerCase()}
                                       name={effectiveCategory}
                                       group={categoryInfo?.group}
                                       value={card.value}
+                                      isGroupCard={card.isGroupCard}
                                       selected={false}
                                     />
                                     <div className="absolute bottom-1 right-1 bg-slate-800/80 text-white text-xs px-2 py-0.5 rounded">
@@ -1026,6 +1172,34 @@ export default function WarFaireClient({
                           </div>
                         );
                       })}
+
+                      {/* Face-down cards */}
+                      {myFaceDownCards.length > 0 && (
+                        <div>
+                          <div className="text-sm font-semibold text-slate-700 mb-3">Face-Down (Future Rounds)</div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {myFaceDownCards.map((card: any, i: number) => {
+                              const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                              const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
+                              return (
+                                <div key={`down-${i}`} className="relative">
+                                  <CardShell
+                                    categoryId={effectiveCategory.toLowerCase()}
+                                    name={effectiveCategory}
+                                    group={categoryInfo?.group}
+                                    value={card.value}
+                                    isGroupCard={card.isGroupCard}
+                                    selected={false}
+                                  />
+                                  <div className="absolute bottom-1 right-1 bg-slate-800/80 text-white text-xs px-2 py-0.5 rounded">
+                                    Fair {card.playedFaceDownAtFair + 1}, Round {card.playedFaceDownAtRound}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 )}
