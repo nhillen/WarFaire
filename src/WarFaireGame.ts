@@ -157,18 +157,34 @@ export class WarFaireGame extends GameBase {
     const hasGroupCards = cardsToFlip.some(({ card }) => card.isGroupCard);
 
     if (hasGroupCards) {
+      console.log(`🎪 ========== GROUP CARD SELECTION LOGIC ==========`);
+      console.log(`🎪 Found ${cardsToFlip.length} cards to flip:`, cardsToFlip.map(({ player, card }) => ({
+        player: player.name,
+        isAI: player.isAI,
+        category: card.category,
+        value: card.value,
+        isGroupCard: card.isGroupCard,
+        selectedCategory: card.selectedCategory || 'NONE'
+      })));
+
       // Auto-select for AI players BEFORE entering selection phase
-      console.log(`🎪 [AI] Auto-selecting for ${cardsToFlip.filter(({ player, card }) => player.isAI && card.isGroupCard).length} AI group cards...`);
+      const aiGroupCards = cardsToFlip.filter(({ player, card }) => player.isAI && card.isGroupCard);
+      console.log(`🎪 [AI] Auto-selecting for ${aiGroupCards.length} AI group cards...`);
+
       for (const { player, card } of cardsToFlip) {
         if (player.isAI && card.isGroupCard) {
           const validCategories = this.warfaireInstance.activeCategories.filter(
             (c: any) => c.group === card.category
           );
+          console.log(`🎪 [AI] ${player.name} has ${card.category} group card. Valid categories:`, validCategories.map((c: any) => c.name));
+
           if (validCategories.length > 0) {
             card.selectedCategory = validCategories[
               Math.floor(Math.random() * validCategories.length)
             ].name;
-            console.log(`🎪 [AI] ${player.name} auto-selected ${card.selectedCategory} for ${card.category} group card`);
+            console.log(`🎪 [AI] ${player.name} auto-selected "${card.selectedCategory}" for ${card.category} group card`);
+          } else {
+            console.log(`🎪 [AI ERROR] ${player.name} has ${card.category} but no valid categories found!`);
           }
         }
       }
@@ -204,14 +220,14 @@ export class WarFaireGame extends GameBase {
       });
 
       if (allSelected) {
-        console.log(`🎪 ✅ All players ready (all group cards selected), proceeding immediately with flip`);
+        console.log(`🎪 ✅ ALL SELECTIONS COMPLETE - Proceeding immediately with flip (no GroupSelection phase)`);
         // All selections made, proceed with flipping immediately without entering GroupSelection phase
         this.flipCardsAndContinue(cardsToFlip);
         return;
       }
 
       // Not all selections complete, enter group card selection phase and wait for humans
-      console.log(`🎪 Entering GroupSelection phase - waiting for human players`);
+      console.log(`🎪 ⏳ NOT all selections complete - Entering GroupSelection phase`);
       this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}GroupSelection`;
       (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player, card }) => ({
         playerId: player.id,
