@@ -281,15 +281,26 @@ export default function WarFaireClient({
     const faceDownCard = isFaceUp ? slotB.card : slotA.card;
     const selections: { faceUp?: string; faceDown?: string } = {};
 
+    // Debug logging
+    console.log('Submit cards debug:', {
+      isFaceUp,
+      slotA: slotA.card.category,
+      slotB: slotB.card.category,
+      faceUpCard: faceUpCard.category,
+      faceDownCard: faceDownCard.category,
+      groupSelections
+    });
+
+    // Only handle selections for face-up cards (they score immediately and need category selection)
+    // Face-down cards will have their category selected when they flip in future fairs
     if (faceUpCard.isGroupCard) {
       const slotKey = isFaceUp ? 'slotA' : 'slotB';
       selections.faceUp = groupSelections[slotKey] || faceUpCard.getEffectiveCategory?.() || faceUpCard.category;
+      console.log('Face-up group card selection:', { slotKey, selected: selections.faceUp });
     }
 
-    if (faceDownCard.isGroupCard) {
-      const slotKey = isFaceUp ? 'slotB' : 'slotA';
-      selections.faceDown = groupSelections[slotKey] || faceDownCard.getEffectiveCategory?.() || faceDownCard.category;
-    }
+    // Don't set selections for face-down group cards - they'll be selected when flipped
+    // (Removing the face-down selection logic to avoid confusion)
 
     onPlayerAction('play_cards', {
       faceUpCard,
@@ -1297,10 +1308,13 @@ export default function WarFaireClient({
             {/* Group Card Category Selection */}
             {/* NOTE: Selection happens for face-UP cards that score immediately */}
             {/* Face-down cards will have their category selected when they flip in future fairs */}
-            {/* Slot A selector only shows if slot A is face-up (scoring this round) */}
+            {/* Slot A selector - shows based on which card will be face-up */}
+            {/* When isFaceUp is true, A is face-up, so show selector for A if it's a group card */}
             {slotA && slotA.card.isGroupCard && isFaceUp && (
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-slate-700">Slot A Category:</label>
+                <label className="text-xs font-medium text-slate-700">
+                  Face-Up Card ({slotA.card.category}) Category:
+                </label>
                 <select
                   value={groupSelections.slotA || ''}
                   onChange={(e) => setGroupSelections(prev => ({ ...prev, slotA: e.target.value }))}
@@ -1321,7 +1335,9 @@ export default function WarFaireClient({
             {/* B is face-up when A is face-down (when isFaceUp is false) */}
             {slotB && slotB.card.isGroupCard && !isFaceUp && (
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-slate-700">Slot B Category:</label>
+                <label className="text-xs font-medium text-slate-700">
+                  Face-Up Card ({slotB.card.category}) Category:
+                </label>
                 <select
                   value={groupSelections.slotB || ''}
                   onChange={(e) => setGroupSelections(prev => ({ ...prev, slotB: e.target.value }))}
