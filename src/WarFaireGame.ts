@@ -255,29 +255,54 @@ export class WarFaireGame extends GameBase {
         })));
       }
 
-      // Set a 15-second timer to auto-select for any remaining human players
+      // Set a timer to auto-select for any remaining human players
+      // Shorter timeout if no humans need to select (just showing AI selections)
+      const timeoutMs = pendingHumans.length > 0 ? 15000 : 3000; // 3 sec for AI-only, 15 sec with humans
+      console.log(`🎪 Setting group selection timeout: ${timeoutMs}ms (${pendingHumans.length} humans pending)`);
+
       if (this.groupSelectionTimer) {
         clearTimeout(this.groupSelectionTimer);
       }
+
+      // Store timeout start time and duration for countdown timer
+      (this.gameState as any).groupSelectionTimeoutStart = Date.now();
+      (this.gameState as any).groupSelectionTimeoutDuration = timeoutMs;
+
       this.groupSelectionTimer = setTimeout(() => {
-        console.log(`🎪 Group selection timeout - auto-selecting for remaining players`);
-        // Auto-select for any remaining group cards that don't have a selection
-        for (const { player, card } of cardsToFlip) {
-          if (card.isGroupCard && !card.selectedCategory) {
-            const validCategories = this.warfaireInstance!.activeCategories.filter(
-              (c: any) => c.group === card.category
-            );
-            if (validCategories.length > 0) {
-              card.selectedCategory = validCategories[
-                Math.floor(Math.random() * validCategories.length)
-              ].name;
-              console.log(`🎪 [TIMEOUT] Auto-selected ${card.selectedCategory} for ${player.name}'s group card`);
+        try {
+          console.log(`🎪 Group selection timeout - auto-selecting for remaining players`);
+          // Auto-select for any remaining group cards that don't have a selection
+          for (const { player, card } of cardsToFlip) {
+            if (card.isGroupCard && !card.selectedCategory) {
+              const validCategories = this.warfaireInstance!.activeCategories.filter(
+                (c: any) => c.group === card.category
+              );
+              if (validCategories.length > 0) {
+                card.selectedCategory = validCategories[
+                  Math.floor(Math.random() * validCategories.length)
+                ].name;
+                console.log(`🎪 [TIMEOUT] Auto-selected ${card.selectedCategory} for ${player.name}'s group card`);
+              }
             }
           }
+          // Proceed with flipping
+          console.log(`🎪 [TIMEOUT] Calling flipCardsAndContinue...`);
+          this.flipCardsAndContinue(cardsToFlip);
+          console.log(`🎪 [TIMEOUT] flipCardsAndContinue completed successfully`);
+        } catch (error) {
+          console.error(`🎪 [ERROR] Group selection timeout callback failed:`, error);
+          console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+          // Force transition to avoid being stuck
+          try {
+            this.flipCardsAndContinue(cardsToFlip);
+          } catch (retryError) {
+            console.error(`🎪 [ERROR] Retry also failed. Forcing phase transition:`, retryError);
+            this.gameState!.phase = `Fair${this.currentFair}Round${this.currentRound}`;
+            this.syncWarFaireStateToSeats();
+            this.broadcastGameState();
+          }
         }
-        // Proceed with flipping
-        this.flipCardsAndContinue(cardsToFlip);
-      }, 15000); // 15 seconds
+      }, timeoutMs);
 
       return;
     }
@@ -292,11 +317,17 @@ export class WarFaireGame extends GameBase {
   }
 
   private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>): void {
-    if (!this.warfaireInstance || !this.gameState) return;
+    console.log(`🎪 [FLIP] flipCardsAndContinue called for ${cardsToFlip.length} cards`);
 
-    const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
+    if (!this.warfaireInstance || !this.gameState) {
+      console.error(`🎪 [FLIP ERROR] Missing warfaireInstance or gameState`);
+      return;
+    }
 
-    console.log(`🎪 [FLIP] Starting to flip ${cardsToFlip.length} cards...`);
+    try {
+      const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
+
+      console.log(`🎪 [FLIP] Starting to flip ${cardsToFlip.length} cards (Fair ${fairToFlipFrom} → Fair ${this.currentFair})...`);
 
     // Flip face-down cards → they become face-up played cards
     for (const { player, card } of cardsToFlip) {
@@ -342,6 +373,19 @@ export class WarFaireGame extends GameBase {
       clearTimeout(this.aiTurnTimer);
     }
     this.aiTurnTimer = setTimeout(() => this.handleAITurns(), 5000); // 5 seconds for humans to act
+
+    console.log(`🎪 [FLIP] flipCardsAndContinue completed successfully. New phase: ${this.gameState.phase}`);
+    } catch (error) {
+      console.error(`🎪 [FLIP ERROR] Error in flipCardsAndContinue:`, error);
+      console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      // Force phase transition to prevent being stuck
+      if (this.gameState) {
+        this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}`;
+        this.syncWarFaireStateToSeats();
+        this.broadcastGameState();
+      }
+      throw error;
+    }
   }
 
   private syncWarFaireStateToSeats(): void {

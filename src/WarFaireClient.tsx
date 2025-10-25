@@ -111,6 +111,33 @@ export default function WarFaireClient({
   // ===== GROUP CARD CATEGORY SELECTION =====
   const [groupSelections, setGroupSelections] = useState<{ slotA?: string; slotB?: string }>({});
 
+  // ===== COUNTDOWN TIMER FOR GROUP SELECTION =====
+  const [groupSelectionTimeRemaining, setGroupSelectionTimeRemaining] = useState<number | null>(null);
+
+  // Update countdown timer when in GroupSelection phase
+  useEffect(() => {
+    if (game?.phase.includes('GroupSelection')) {
+      const timeoutStart = (game as any).groupSelectionTimeoutStart;
+      const timeoutDuration = (game as any).groupSelectionTimeoutDuration;
+
+      if (timeoutStart && timeoutDuration) {
+        const updateTimer = () => {
+          const elapsed = Date.now() - timeoutStart;
+          const remaining = Math.max(0, timeoutDuration - elapsed);
+          setGroupSelectionTimeRemaining(remaining);
+
+          if (remaining > 0) {
+            requestAnimationFrame(updateTimer);
+          }
+        };
+
+        updateTimer();
+      }
+    } else {
+      setGroupSelectionTimeRemaining(null);
+    }
+  }, [game?.phase, (game as any).groupSelectionTimeoutStart]);
+
   // ===== DERIVED DATA FROM EXISTING PROPS =====
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
   const myHand = mySeat?.hand || [];
@@ -446,9 +473,24 @@ export default function WarFaireClient({
               ))}
             </div>
 
-            <div className="mt-6 text-sm text-slate-500 text-center">
-              ⏱️ Auto-selects in 15 seconds
-            </div>
+            {/* Countdown timer and progress bar */}
+            {groupSelectionTimeRemaining !== null && (
+              <div className="mt-6">
+                <div className="w-full bg-slate-200 rounded-full h-2 mb-2 overflow-hidden">
+                  <div
+                    className="h-full bg-purple-600 transition-all duration-100"
+                    style={{
+                      width: `${((game as any).groupSelectionTimeoutDuration ?
+                        (groupSelectionTimeRemaining / (game as any).groupSelectionTimeoutDuration) * 100 :
+                        0)}%`
+                    }}
+                  />
+                </div>
+                <div className="text-sm text-slate-500 text-center">
+                  ⏱️ Auto-selects in {Math.ceil(groupSelectionTimeRemaining / 1000)} second{Math.ceil(groupSelectionTimeRemaining / 1000) !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -469,9 +511,25 @@ export default function WarFaireClient({
                 ? `Waiting for ${humanGroupCardPlayers.length} player(s) to select categories for their group cards...`
                 : 'AI players are selecting categories for their group cards...'}
             </p>
-            <div className="text-sm text-slate-400">
-              ⏱️ Will auto-select after 15 seconds
-            </div>
+
+            {/* Countdown timer and progress bar */}
+            {groupSelectionTimeRemaining !== null && (
+              <div className="mb-6">
+                <div className="w-full bg-slate-700 rounded-full h-3 mb-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-100"
+                    style={{
+                      width: `${((game as any).groupSelectionTimeoutDuration ?
+                        (groupSelectionTimeRemaining / (game as any).groupSelectionTimeoutDuration) * 100 :
+                        0)}%`
+                    }}
+                  />
+                </div>
+                <div className="text-base text-slate-300">
+                  ⏱️ Auto-selecting in {Math.ceil(groupSelectionTimeRemaining / 1000)} second{Math.ceil(groupSelectionTimeRemaining / 1000) !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
             {isAdmin && (
               <div className="mt-6 p-4 bg-slate-800 rounded-lg">
                 <div className="text-xs text-slate-400 mb-2">Admin Info:</div>
