@@ -112,10 +112,35 @@ export class WarFaireGame extends GameBase {
       // Sync initial state (including the 3 initial face-down cards)
       this.syncWarFaireStateToSeats();
 
-      console.log('🎪 Starting first round...');
-      // Start first round immediately - the delay was causing issues
-      this.startRound();
-      console.log('🎪 Game started successfully!');
+      // For Round 1 only: Draw initial cards BEFORE flipping
+      // This allows players to see 3 face-down cards + have cards in hand
+      console.log('🎪 Drawing initial cards for Round 1...');
+      for (const player of this.warfaireInstance.players) {
+        for (let i = 0; i < 3; i++) {
+          if (this.warfaireInstance.deck.length > 0) {
+            player.addToHand(this.warfaireInstance.deck.pop());
+          }
+        }
+      }
+
+      // Update state with the drawn cards
+      this.syncWarFaireStateToSeats();
+
+      // Broadcast the complete initial state (3 face-down + 3 in hand)
+      this.broadcastGameState();
+      console.log('🎪 Broadcasted initial state: 3 face-down cards + 3 cards in hand');
+
+      // Set a flag so startRound knows not to draw again for Round 1
+      (this.warfaireInstance as any).initialCardsDrawn = true;
+
+      // Delay the flip so players can see the complete initial state
+      console.log('🎪 Scheduling first card flip in 1 second...');
+      setTimeout(() => {
+        console.log('🎪 Starting first round after delay');
+        // Start first round - will flip but not draw (since we already did)
+        this.startRound();
+        console.log('🎪 Game started successfully!');
+      }, 1000); // 1 second delay to show initial state
     } catch (error) {
       console.error('🎪 ERROR starting WarFaire game:', error);
       this.gameState.phase = 'Lobby';
@@ -346,8 +371,12 @@ export class WarFaireGame extends GameBase {
 
     console.log(`🎪 [FLIP] All cards flipped`);
 
-    // Deal cards to each player (unless Fair 3)
-    if (this.currentFair < 3) {
+    // Deal cards to each player (unless Fair 3 or initial cards already drawn)
+    const shouldDrawCards = this.currentFair < 3 &&
+                          !(this.currentFair === 1 && this.currentRound === 1 && (this.warfaireInstance as any).initialCardsDrawn);
+
+    if (shouldDrawCards) {
+      console.log(`🎪 Drawing 3 cards per player...`);
       for (const player of this.warfaireInstance.players) {
         for (let i = 0; i < 3; i++) {
           if (this.warfaireInstance.deck.length > 0) {
@@ -355,7 +384,11 @@ export class WarFaireGame extends GameBase {
           }
         }
       }
-    } else {
+    } else if ((this.warfaireInstance as any).initialCardsDrawn) {
+      console.log(`🎪 Skipping draw - initial cards already drawn for Round 1`);
+      // Clear the flag after first use
+      delete (this.warfaireInstance as any).initialCardsDrawn;
+    } else if (this.currentFair === 3) {
       console.log(`🎪 Fair 3 - no drawing, only playing face-down cards from Fair 2`);
     }
 
