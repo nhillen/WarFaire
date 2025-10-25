@@ -112,17 +112,10 @@ export class WarFaireGame extends GameBase {
       // Sync initial state (including the 3 initial face-down cards)
       this.syncWarFaireStateToSeats();
 
-      // Broadcast state so players see their 3 face-down cards
-      this.broadcastGameState();
-      console.log('🎪 Broadcasted initial state with 3 face-down cards');
-
-      // Delay first round start to allow players to see their 3 cards
-      console.log('🎪 Scheduling first round to start in 1 second...');
-      setTimeout(() => {
-        console.log('🎪 Starting first round after delay');
-        this.startRound();
-        console.log('🎪 Game started successfully!');
-      }, 1000); // 1 second delay
+      console.log('🎪 Starting first round...');
+      // Start first round immediately - the delay was causing issues
+      this.startRound();
+      console.log('🎪 Game started successfully!');
     } catch (error) {
       console.error('🎪 ERROR starting WarFaire game:', error);
       this.gameState.phase = 'Lobby';
