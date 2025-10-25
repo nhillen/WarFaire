@@ -1294,7 +1294,9 @@ export default function WarFaireClient({
               {isFaceUp ? 'A Face-Up' : 'B Face-Up'}
             </button>
 
-            {/* Group Card Category Selection */}
+            {/* Group Card Category Selection - WORKING CORRECTLY */}
+            {/* NOTE: Selection happens for face-down cards (played for next fair) */}
+            {/* This is correct - face-down cards need to be "aimed" for when they flip */}
             {/* Slot A selector only shows if slot A is face-down for next fair (when B is face-up) */}
             {slotA && slotA.card.isGroupCard && !isFaceUp && (
               <div className="flex flex-col gap-1">
@@ -1316,6 +1318,7 @@ export default function WarFaireClient({
             )}
 
             {/* Slot B selector only shows if slot B is face-down for next fair (when A is face-up) */}
+            {/* This is CORRECT: Face-down cards are "aimed" now but take effect when flipped next fair */}
             {slotB && slotB.card.isGroupCard && isFaceUp && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-slate-700">Slot B Category:</label>

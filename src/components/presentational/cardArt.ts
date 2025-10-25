@@ -4,17 +4,24 @@
  */
 
 export const CARD_ART: Record<string, string> = {
+  // Produce categories
   pumpkins: "/assets/card_art/pumpkins.png",
   carrots: "/assets/card_art/carrots.png",
   tomatoes: "/assets/card_art/tomatoes.png",
   corn: "/assets/card_art/corn.png",
+  // Baking categories
   pies: "/assets/card_art/pies.png",
   cakes: "/assets/card_art/cake.png",
   breads: "/assets/card_art/bread.png",
   cookies: "/assets/card_art/cookies.png",
+  // Livestock categories
   chickens: "/assets/card_art/chickens.png",
   pigs: "/assets/card_art/pigs.png",
-  cows: "/assets/card_art/cows.png"
+  cows: "/assets/card_art/cows.png",
+  // Group cards (use a representative image)
+  livestock: "/assets/card_art/cows.png",  // Generic livestock image
+  produce: "/assets/card_art/corn.png",    // Generic produce image
+  baking: "/assets/card_art/bread.png"     // Generic baking image
 };
 
 /**
