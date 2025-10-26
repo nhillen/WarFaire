@@ -92,6 +92,15 @@ export class WarFaireGame extends GameBase {
       this.warfaireInstance.setupFirstFair();
       console.log('🎪 First fair setup complete');
 
+      // Debug log initial face-down cards
+      for (const player of this.warfaireInstance.players) {
+        console.log(`🎪 [SETUP] ${player.name} initial state:`, {
+          faceDownCards: player.faceDownCards.length,
+          hand: player.hand.length,
+          playedCards: player.playedCards.length
+        });
+      }
+
     // Initialize WarFaire-specific fields on seats
     this.gameState.seats.forEach((seat, index) => {
       if (seat) {
@@ -116,30 +125,41 @@ export class WarFaireGame extends GameBase {
       // This allows players to see 3 face-down cards + have cards in hand
       console.log('🎪 Drawing initial cards for Round 1...');
       for (const player of this.warfaireInstance.players) {
+        const cardsBeforeDraw = player.hand.length;
         for (let i = 0; i < 3; i++) {
           if (this.warfaireInstance.deck.length > 0) {
             player.addToHand(this.warfaireInstance.deck.pop());
           }
         }
+        console.log(`🎪 [INIT] ${player.name}: Drew ${player.hand.length - cardsBeforeDraw} cards, now has ${player.hand.length} in hand`);
       }
 
       // Update state with the drawn cards
       this.syncWarFaireStateToSeats();
 
       // Broadcast the complete initial state (3 face-down + 3 in hand)
+      console.log('🎪 [BROADCAST] About to broadcast initial state...');
       this.broadcastGameState();
-      console.log('🎪 Broadcasted initial state: 3 face-down cards + 3 cards in hand');
+      console.log('🎪 [BROADCAST] Broadcasted initial state: 3 face-down cards + 3 cards in hand');
 
       // Set a flag so startRound knows not to draw again for Round 1
       (this.warfaireInstance as any).initialCardsDrawn = true;
 
       // Delay the flip so players can see the complete initial state
-      console.log('🎪 Scheduling first card flip in 1 second...');
+      console.log('🎪 [TIMING] Scheduling first round to start in 1 second...');
       setTimeout(() => {
-        console.log('🎪 Starting first round after delay');
+        console.log('🎪 [TIMING] 1 second elapsed, starting first round now');
+        console.log('🎪 [TIMING] Before startRound, checking player states...');
+        for (const player of this.warfaireInstance!.players) {
+          console.log(`🎪 [TIMING] ${player.name} before startRound:`, {
+            faceDownCards: player.faceDownCards.length,
+            hand: player.hand.length,
+            playedCards: player.playedCards.length
+          });
+        }
         // Start first round - will flip but not draw (since we already did)
         this.startRound();
-        console.log('🎪 Game started successfully!');
+        console.log('🎪 [TIMING] startRound completed');
       }, 1000); // 1 second delay to show initial state
     } catch (error) {
       console.error('🎪 ERROR starting WarFaire game:', error);
@@ -425,10 +445,20 @@ export class WarFaireGame extends GameBase {
     if (!this.warfaireInstance || !this.gameState) return;
 
     console.log(`🎪 [SYNC] Syncing state - Fair ${this.currentFair}, Round ${this.currentRound}`);
+    console.log(`🎪 [SYNC] Phase: ${this.gameState.phase}`);
 
     this.warfaireInstance.players.forEach((wfPlayer: any, index: number) => {
       const seat = this.gameState!.seats[index];
       if (seat) {
+        // Debug log player state
+        console.log(`🎪 [SYNC] Player ${wfPlayer.name}:`, {
+          handCount: wfPlayer.hand.length,
+          playedCardsCount: wfPlayer.playedCards.length,
+          faceUpCardsCount: wfPlayer.faceUpCards?.length || 0,
+          faceDownCardsCount: wfPlayer.faceDownCards?.length || 0,
+          totalCardsOnBoard: (wfPlayer.faceUpCards?.length || 0) + (wfPlayer.faceDownCards?.length || 0)
+        });
+
         seat.hand = wfPlayer.hand.map((c: any) => ({
           category: c.category,
           value: c.value,
@@ -609,6 +639,9 @@ export class WarFaireGame extends GameBase {
       // Clear the timer reference since we're executing now
       this.aiTurnTimer = null;
 
+      console.log(`🎪 [AI] ======== HANDLING AI TURNS ========`);
+      console.log(`🎪 [AI] Current state - Fair ${this.currentFair}, Round ${this.currentRound}`);
+      console.log(`🎪 [AI] Phase: ${this.gameState.phase}`);
       console.log(`🎪 [AI] Starting AI turns handler at ${Date.now()}`);
       let aiActionsCount = 0;
 
@@ -648,6 +681,12 @@ export class WarFaireGame extends GameBase {
 
           player.playCardFaceUp(faceUpCard);
           console.log(`🎪 [AI] AI ${seat.name} played face-up: ${faceUpCard.category} (${faceUpCard.value})`);
+          console.log(`🎪 [AI] ${seat.name} after face-up play:`, {
+            handRemaining: player.hand.length,
+            faceUpCards: player.faceUpCards.length,
+            faceDownCards: player.faceDownCards.length,
+            playedCards: player.playedCards.length
+          });
 
           // Play face-down only in Fairs 1 and 2
           if (this.currentFair < 3 && player.hand.length > 0) {
@@ -667,6 +706,12 @@ export class WarFaireGame extends GameBase {
 
             player.playCardFaceDown(faceDownCard);
             console.log(`🎪 [AI] AI ${seat.name} played face-down for Fair ${this.currentFair + 1}: ${faceDownCard.category} (${faceDownCard.value})`);
+            console.log(`🎪 [AI] ${seat.name} after face-down play:`, {
+              handRemaining: player.hand.length,
+              faceUpCards: player.faceUpCards.length,
+              faceDownCards: player.faceDownCards.length,
+              playedCards: player.playedCards.length
+            });
           }
 
           seat.hasActed = true;
