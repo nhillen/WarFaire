@@ -310,9 +310,13 @@ export default function WarFaireClient({
     clearSelection();
   };
 
-  const canSubmit = slotA && slotB &&
-    (!slotA.card.isGroupCard || groupSelections.slotA) &&
-    (!slotB.card.isGroupCard || groupSelections.slotB);
+  // Only check for group selections on the face-up card
+  // Face-down group cards will have their category selected when they flip in future fairs
+  const faceUpSlot = isFaceUp ? slotA : slotB;
+  const faceUpHasSelection = !faceUpSlot || !faceUpSlot.card.isGroupCard ||
+    (isFaceUp ? groupSelections.slotA : groupSelections.slotB);
+
+  const canSubmit = slotA && slotB && faceUpHasSelection;
 
   // ===== LOADING STATE =====
   if (!game) {
@@ -1268,6 +1272,11 @@ export default function WarFaireClient({
               ) : (
                 <div className="slot-mini">
                   <img src={getCardArt((slotA.card.getEffectiveCategory ? slotA.card.getEffectiveCategory() : slotA.card.category).toLowerCase())} alt="" />
+                  {slotA.card.isGroupCard && (
+                    <div className="absolute top-1 left-1 bg-yellow-300 px-1 py-0.5 rounded text-xs font-bold">
+                      {slotA.card.category}
+                    </div>
+                  )}
                 </div>
               )
             ) : (
@@ -1279,13 +1288,20 @@ export default function WarFaireClient({
             {/* Slot B */}
             {slotB ? (
               isFaceUp ? (
+                // When A is face-up, B is face-down (next fair)
                 <div className="slot-mini">
                   <img src="/assets/card_art/card_back.png" alt="Card back" />
                   <div className="next-chip">next fair</div>
                 </div>
               ) : (
+                // When A is face-down, B is face-up (current fair)
                 <div className="slot-mini">
                   <img src={getCardArt((slotB.card.getEffectiveCategory ? slotB.card.getEffectiveCategory() : slotB.card.category).toLowerCase())} alt="" />
+                  {slotB.card.isGroupCard && (
+                    <div className="absolute top-1 left-1 bg-yellow-300 px-1 py-0.5 rounded text-xs font-bold">
+                      {slotB.card.category}
+                    </div>
+                  )}
                 </div>
               )
             ) : (
