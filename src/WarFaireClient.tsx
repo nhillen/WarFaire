@@ -115,6 +115,11 @@ export default function WarFaireClient({
   const [groupSelectionTimeRemaining, setGroupSelectionTimeRemaining] = useState<number | null>(null);
   const timerRef = useRef<number | null>(null);
 
+  // Extract values we need before useEffect to avoid object reference issues
+  const currentPhase = game?.phase;
+  const timeoutStart = (game as any)?.groupSelectionTimeoutStart;
+  const timeoutDuration = (game as any)?.groupSelectionTimeoutDuration;
+
   // Update countdown timer when in GroupSelection phase
   useEffect(() => {
     // Cancel any existing timer
@@ -123,10 +128,7 @@ export default function WarFaireClient({
       timerRef.current = null;
     }
 
-    if (game?.phase.includes('GroupSelection')) {
-      const timeoutStart = (game as any).groupSelectionTimeoutStart;
-      const timeoutDuration = (game as any).groupSelectionTimeoutDuration;
-
+    if (currentPhase?.includes('GroupSelection')) {
       if (timeoutStart && timeoutDuration) {
         const updateTimer = () => {
           const elapsed = Date.now() - timeoutStart;
@@ -153,7 +155,7 @@ export default function WarFaireClient({
         timerRef.current = null;
       }
     };
-  }, [game?.phase, game ? (game as any).groupSelectionTimeoutStart : null]);
+  }, [currentPhase, timeoutStart, timeoutDuration]);
 
   // ===== DERIVED DATA FROM EXISTING PROPS =====
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
@@ -176,19 +178,19 @@ export default function WarFaireClient({
   // Combine regular face-down cards with the card being flipped (if any)
   const allMyFaceDownCards = [...myFaceDownCards];
 
-  // Debug logging
-  console.log('🎴 [CLIENT DEBUG] Face-down cards state:', {
-    phase: game?.phase,
-    isGroupSelection: game?.phase.includes('GroupSelection'),
-    myFaceDownCards: myFaceDownCards.length,
-    cardsToFlip: cardsToFlip.length,
-    cardsToFlipData: cardsToFlip.map((c: any) => ({
-      playerId: typeof c.playerId === 'string' ? c.playerId.slice(0, 8) : c.playerId,
-      card: c.card?.category || 'unknown'
-    })),
-    myCardBeingFlipped: myCardBeingFlipped ? myCardBeingFlipped.card.category : 'none',
-    allMyFaceDownCardsBefore: allMyFaceDownCards.length
-  });
+  // Debug logging (commented out to reduce spam)
+  // console.log('🎴 [CLIENT DEBUG] Face-down cards state:', {
+  //   phase: game?.phase,
+  //   isGroupSelection: game?.phase.includes('GroupSelection'),
+  //   myFaceDownCards: myFaceDownCards.length,
+  //   cardsToFlip: cardsToFlip.length,
+  //   cardsToFlipData: cardsToFlip.map((c: any) => ({
+  //     playerId: typeof c.playerId === 'string' ? c.playerId.slice(0, 8) : c.playerId,
+  //     card: c.card?.category || 'unknown'
+  //   })),
+  //   myCardBeingFlipped: myCardBeingFlipped ? myCardBeingFlipped.card.category : 'none',
+  //   allMyFaceDownCardsBefore: allMyFaceDownCards.length
+  // });
 
   if (myCardBeingFlipped?.card) {
     // Reconstruct the card object with the metadata needed for display
@@ -464,20 +466,21 @@ export default function WarFaireClient({
     const cardsToFlip = (game as any).cardsToFlip || [];
     const myCardToFlip = cardsToFlip.find((c: any) => c.playerId === meId);
 
-    console.log('🎪 [GROUP SELECTION]', {
-      phase: game.phase,
-      cardsToFlip: cardsToFlip.map((c: any) => ({
-        playerId: typeof c.playerId === 'string' ? c.playerId.slice(0, 8) : c.playerId,
-        isGroupCard: c.card?.isGroupCard,
-        category: c.card?.category,
-        value: c.card?.value
-      })),
-      myCardToFlip: myCardToFlip ? {
-        isGroupCard: myCardToFlip.card?.isGroupCard,
-        category: myCardToFlip.card?.category,
-        value: myCardToFlip.card?.value
-      } : null
-    });
+    // Debug logging (commented out to reduce spam)
+    // console.log('🎪 [GROUP SELECTION]', {
+    //   phase: game.phase,
+    //   cardsToFlip: cardsToFlip.map((c: any) => ({
+    //     playerId: typeof c.playerId === 'string' ? c.playerId.slice(0, 8) : c.playerId,
+    //     isGroupCard: c.card?.isGroupCard,
+    //     category: c.card?.category,
+    //     value: c.card?.value
+    //   })),
+    //   myCardToFlip: myCardToFlip ? {
+    //     isGroupCard: myCardToFlip.card?.isGroupCard,
+    //     category: myCardToFlip.card?.category,
+    //     value: myCardToFlip.card?.value
+    //   } : null
+    // });
 
     if (myCardToFlip && myCardToFlip.card.isGroupCard) {
       const validCategories = activeCategories.filter(cat => cat.group === myCardToFlip.card.category);
