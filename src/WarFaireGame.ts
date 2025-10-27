@@ -429,12 +429,20 @@ export class WarFaireGame extends GameBase {
 
     // Update game state phase
     this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}`;
+    console.log(`🎪 [FLIP] Phase updated to: ${this.gameState.phase}`);
+
+    // Reset hasActed flags for new round
+    console.log(`🎪 [FLIP] Resetting hasActed flags for all seats`);
+    this.gameState.seats.forEach(s => { if (s) s.hasActed = false; });
 
     // Sync state to platform seats
     this.syncWarFaireStateToSeats();
+    console.log(`🎪 [FLIP] State synced to seats`);
 
     // Broadcast state
+    console.log(`🎪 [FLIP] Broadcasting phase change to all clients...`);
     this.broadcastGameState();
+    console.log(`🎪 [FLIP] Broadcast complete`);
 
     // Schedule AI turn check with timeout (in case no humans act)
     if (this.aiTurnTimer) {
