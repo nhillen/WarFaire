@@ -136,7 +136,7 @@ export default function WarFaireClient({
     } else {
       setGroupSelectionTimeRemaining(null);
     }
-  }, [game?.phase, (game as any).groupSelectionTimeoutStart]);
+  }, [game?.phase, game ? (game as any).groupSelectionTimeoutStart : null]);
 
   // ===== DERIVED DATA FROM EXISTING PROPS =====
   const mySeat = game?.seats?.find(s => s && s.playerId === meId);
