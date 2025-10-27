@@ -717,7 +717,6 @@ export class WarFaireGame extends GameBase {
           console.log(`🎪 [AI] AI ${seat.name} played face-up: ${faceUpCard.category} (${faceUpCard.value})`);
           console.log(`🎪 [AI] ${seat.name} after face-up play:`, {
             handRemaining: player.hand.length,
-            faceUpCards: player.faceUpCards.length,
             faceDownCards: player.faceDownCards.length,
             playedCards: player.playedCards.length
           });
@@ -742,7 +741,6 @@ export class WarFaireGame extends GameBase {
             console.log(`🎪 [AI] AI ${seat.name} played face-down for Fair ${this.currentFair + 1}: ${faceDownCard.category} (${faceDownCard.value})`);
             console.log(`🎪 [AI] ${seat.name} after face-down play:`, {
               handRemaining: player.hand.length,
-              faceUpCards: player.faceUpCards.length,
               faceDownCards: player.faceDownCards.length,
               playedCards: player.playedCards.length
             });
