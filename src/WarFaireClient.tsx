@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CardShell } from './components/presentational/CardShell';
 import { CardBack } from './components/presentational/CardBack';
 import { MiniCardChip } from './components/presentational/MiniCardChip';
@@ -113,9 +113,16 @@ export default function WarFaireClient({
 
   // ===== COUNTDOWN TIMER FOR GROUP SELECTION =====
   const [groupSelectionTimeRemaining, setGroupSelectionTimeRemaining] = useState<number | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   // Update countdown timer when in GroupSelection phase
   useEffect(() => {
+    // Cancel any existing timer
+    if (timerRef.current !== null) {
+      cancelAnimationFrame(timerRef.current);
+      timerRef.current = null;
+    }
+
     if (game?.phase.includes('GroupSelection')) {
       const timeoutStart = (game as any).groupSelectionTimeoutStart;
       const timeoutDuration = (game as any).groupSelectionTimeoutDuration;
@@ -127,7 +134,9 @@ export default function WarFaireClient({
           setGroupSelectionTimeRemaining(remaining);
 
           if (remaining > 0) {
-            requestAnimationFrame(updateTimer);
+            timerRef.current = requestAnimationFrame(updateTimer);
+          } else {
+            timerRef.current = null;
           }
         };
 
@@ -136,6 +145,14 @@ export default function WarFaireClient({
     } else {
       setGroupSelectionTimeRemaining(null);
     }
+
+    // Cleanup function
+    return () => {
+      if (timerRef.current !== null) {
+        cancelAnimationFrame(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [game?.phase, game ? (game as any).groupSelectionTimeoutStart : null]);
 
   // ===== DERIVED DATA FROM EXISTING PROPS =====
@@ -502,7 +519,9 @@ export default function WarFaireClient({
                   />
                 </div>
                 <div className="text-sm text-slate-500 text-center">
-                  ⏱️ Auto-selects in {Math.ceil(groupSelectionTimeRemaining / 1000)} second{Math.ceil(groupSelectionTimeRemaining / 1000) !== 1 ? 's' : ''}
+                  {groupSelectionTimeRemaining > 0
+                    ? `⏱️ Auto-selects in ${Math.ceil(groupSelectionTimeRemaining / 1000)} second${Math.ceil(groupSelectionTimeRemaining / 1000) !== 1 ? 's' : ''}`
+                    : '⏳ Processing...'}
                 </div>
               </div>
             )}
@@ -541,7 +560,9 @@ export default function WarFaireClient({
                   />
                 </div>
                 <div className="text-base text-slate-300">
-                  ⏱️ Auto-selecting in {Math.ceil(groupSelectionTimeRemaining / 1000)} second{Math.ceil(groupSelectionTimeRemaining / 1000) !== 1 ? 's' : ''}
+                  {groupSelectionTimeRemaining > 0
+                    ? `⏱️ Auto-selecting in ${Math.ceil(groupSelectionTimeRemaining / 1000)} second${Math.ceil(groupSelectionTimeRemaining / 1000) !== 1 ? 's' : ''}`
+                    : '⏳ Processing...'}
                 </div>
               </div>
             )}
