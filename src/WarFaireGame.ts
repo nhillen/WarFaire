@@ -12,6 +12,7 @@ export class WarFaireGame extends GameBase {
   private groupSelectionTimer: NodeJS.Timeout | null = null;
   private gameEndTimer: NodeJS.Timeout | null = null;
   private isProcessingRound: boolean = false;
+  private seatToPlayerIndex: Map<number, number> = new Map(); // Maps seat index to player index
 
   constructor(tableConfig: any) {
     super(tableConfig);
@@ -86,6 +87,17 @@ export class WarFaireGame extends GameBase {
       this.warfaireInstance = new Game(playerNames);
       this.currentFair = 1;
       this.currentRound = 0;
+
+      // Create mapping from seat index to player index
+      this.seatToPlayerIndex.clear();
+      let playerIndex = 0;
+      this.gameState.seats.forEach((seat, seatIndex) => {
+        if (seat !== null) {
+          this.seatToPlayerIndex.set(seatIndex, playerIndex);
+          playerIndex++;
+        }
+      });
+      console.log('🎪 Seat to player index mapping:', Array.from(this.seatToPlayerIndex.entries()));
 
       console.log('🎪 Setting up first fair...');
       // Setup first Fair
@@ -450,9 +462,19 @@ export class WarFaireGame extends GameBase {
     console.log(`🎪 [SYNC] Syncing state - Fair ${this.currentFair}, Round ${this.currentRound}`);
     console.log(`🎪 [SYNC] Phase: ${this.gameState.phase}`);
 
-    this.warfaireInstance.players.forEach((wfPlayer: any, index: number) => {
-      const seat = this.gameState!.seats[index];
+    // Iterate over seats and use the mapping to find the correct player
+    this.gameState.seats.forEach((seat, seatIndex) => {
       if (seat) {
+        const playerIndex = this.seatToPlayerIndex.get(seatIndex);
+        if (playerIndex === undefined) {
+          console.error(`🎪 [SYNC ERROR] No player index found for seat ${seatIndex}`);
+          return;
+        }
+        const wfPlayer = this.warfaireInstance!.players[playerIndex];
+        if (!wfPlayer) {
+          console.error(`🎪 [SYNC ERROR] No player found at player index ${playerIndex} for seat ${seatIndex}`);
+          return;
+        }
         // Debug log player state
         console.log(`🎪 [SYNC] Player ${wfPlayer.name}:`, {
           handCount: wfPlayer.hand.length,
@@ -649,8 +671,8 @@ export class WarFaireGame extends GameBase {
       let aiActionsCount = 0;
 
     // Auto-play for AI players using existing WarFaire AI logic
-    this.gameState.seats.forEach((seat, index) => {
-      console.log(`🎪 [AI] Checking seat ${index}:`, {
+    this.gameState.seats.forEach((seat, seatIndex) => {
+      console.log(`🎪 [AI] Checking seat ${seatIndex}:`, {
         hasSeat: !!seat,
         isAI: seat?.isAI,
         hasFolded: seat?.hasFolded,
@@ -659,8 +681,17 @@ export class WarFaireGame extends GameBase {
       });
 
       if (seat && seat.isAI && !seat.hasFolded && !seat.hasActed) {
-        const player = this.warfaireInstance!.players[index];
-        console.log(`🎪 [AI] AI player ${seat.name} at seat ${index} has ${player.hand.length} cards`);
+        const playerIndex = this.seatToPlayerIndex.get(seatIndex);
+        if (playerIndex === undefined) {
+          console.error(`🎪 [AI ERROR] No player index found for seat ${seatIndex}`);
+          return;
+        }
+        const player = this.warfaireInstance!.players[playerIndex];
+        if (!player) {
+          console.error(`🎪 [AI ERROR] No player found at player index ${playerIndex} for seat ${seatIndex}`);
+          return;
+        }
+        console.log(`🎪 [AI] AI player ${seat.name} at seat ${seatIndex} (player index ${playerIndex}) has ${player.hand.length} cards`);
 
         const minCards = this.currentFair < 3 ? 2 : 1; // Fair 3 only needs 1 card
         if (player.hand.length >= minCards) {
@@ -774,7 +805,16 @@ export class WarFaireGame extends GameBase {
       const seatIndex = this.gameState.seats.findIndex(s => s?.playerId === playerId);
       if (seatIndex === -1) continue;
 
-      const player = this.warfaireInstance.players[seatIndex];
+      const playerIndex = this.seatToPlayerIndex.get(seatIndex);
+      if (playerIndex === undefined) {
+        console.error(`🎪 [PROCESS ERROR] No player index found for seat ${seatIndex}`);
+        continue;
+      }
+      const player = this.warfaireInstance.players[playerIndex];
+      if (!player) {
+        console.error(`🎪 [PROCESS ERROR] No player found at player index ${playerIndex} for seat ${seatIndex}`);
+        continue;
+      }
 
       // Find and play cards
       const faceUpCard = player.hand.find((c: any) =>
@@ -814,11 +854,16 @@ export class WarFaireGame extends GameBase {
 
     // Store round summary data for display
     const roundPlays: any[] = [];
-    this.gameState.seats.forEach((seat, idx) => {
+    this.gameState.seats.forEach((seat, seatIndex) => {
       if (seat && this.warfaireInstance) {
-        const player = this.warfaireInstance.players[idx];
+        const playerIndex = this.seatToPlayerIndex.get(seatIndex);
+        if (playerIndex === undefined) {
+          console.log(`🎪 [WARN] No player index found for seat ${seatIndex} (${seat.name})`);
+          return;
+        }
+        const player = this.warfaireInstance.players[playerIndex];
         if (!player) {
-          console.log(`🎪 [WARN] No player found at index ${idx} for seat ${seat.name}`);
+          console.log(`🎪 [WARN] No player found at player index ${playerIndex} for seat ${seatIndex} (${seat.name})`);
           return;
         }
 
@@ -986,10 +1031,27 @@ export class WarFaireGame extends GameBase {
     if (!this.warfaireInstance) return [];
 
     const winner = this.warfaireInstance.getWinner();
-    const winnerIndex = this.warfaireInstance.players.indexOf(winner);
-    const winningSeat = this.gameState!.seats[winnerIndex];
+    const playerIndex = this.warfaireInstance.players.indexOf(winner);
 
-    if (!winningSeat) return [];
+    // Find the seat index for this player
+    let winningSeatIndex = -1;
+    for (const [seatIdx, playerIdx] of this.seatToPlayerIndex.entries()) {
+      if (playerIdx === playerIndex) {
+        winningSeatIndex = seatIdx;
+        break;
+      }
+    }
+
+    if (winningSeatIndex === -1) {
+      console.error(`🎪 [WINNER ERROR] Could not find seat for player index ${playerIndex}`);
+      return [];
+    }
+
+    const winningSeat = this.gameState!.seats[winningSeatIndex];
+    if (!winningSeat) {
+      console.error(`🎪 [WINNER ERROR] No seat found at index ${winningSeatIndex}`);
+      return [];
+    }
 
     // Award VP as pennies (1 VP = 10 cents = 10 pennies)
     return [{
