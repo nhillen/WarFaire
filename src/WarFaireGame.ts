@@ -961,9 +961,11 @@ export class WarFaireGame extends GameBase {
       // Transition to RoundSummary phase
       this.gameState.phase = `RoundSummary${this.currentFair}_${this.currentRound}`;
       console.log(`🎪 Entering RoundSummary phase`);
+      console.log(`🎪 [BROADCAST] About to broadcast RoundSummary state...`);
 
       this.isProcessingRound = false;
       this.broadcastGameState();
+      console.log(`🎪 [BROADCAST] RoundSummary broadcast complete`);
 
       // DISABLED: Auto-progression was causing disconnect issues
       // if (this.roundSummaryTimer) {
