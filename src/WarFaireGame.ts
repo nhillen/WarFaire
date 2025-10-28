@@ -396,7 +396,13 @@ export class WarFaireGame extends GameBase {
       console.log(`🎪 [FLIP] ${player.name}: removing card at index ${index} from faceDownCards (${player.faceDownCards.length} total)`);
       player.faceDownCards.splice(index, 1);
       console.log(`🎪 [FLIP] ${player.name}: playing ${card.category} ${card.value} face-up to board`);
-      player.playCardFaceUp(card);  // PLAY to board, not add to hand!
+
+      // CRITICAL: playCardFaceUp() expects card to be in hand, but it's not!
+      // Manually add to playedCards with metadata instead
+      card.playedAtFair = player.currentFair;
+      card.playedAtRound = player.currentRound;
+      player.playedCards.push(card);
+
       console.log(`🎪 [FLIP] ${player.name} AFTER flip: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
       if (fairToFlipFrom === 0) {
         console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound} to board: ${card.category} ${card.value}`);
