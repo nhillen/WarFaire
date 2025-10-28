@@ -1,6 +1,6 @@
 import { GameBase, GameState, Seat, Player, WinnerResult } from '@pirate/game-sdk';
 import { Game } from '../game.js';
-import { scoreFair } from '../scorer.js';
+import { scoreFair, updatePrestige } from '../scorer.js';
 
 export class WarFaireGame extends GameBase {
   gameType = 'warfaire';
@@ -1026,7 +1026,6 @@ export class WarFaireGame extends GameBase {
     );
 
     // Update prestige
-    const { updatePrestige } = require('../scorer.js');
     updatePrestige(
       this.warfaireInstance.activeCategories,
       this.warfaireInstance.categoryPrestige,
