@@ -202,7 +202,7 @@ export default function WarFaireClient({
         return this.selectedCategory || this.category;
       }
     });
-    console.log('🎴 [CLIENT DEBUG] Added card being flipped, now have:', allMyFaceDownCards.length, 'cards');
+    // Removed spamming debug log
   }
 
   // ===== SEAT SELECTION HANDLER =====

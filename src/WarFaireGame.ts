@@ -95,6 +95,12 @@ export class WarFaireGame extends GameBase {
       this.gameState.seats.forEach((seat, seatIndex) => {
         if (seat !== null) {
           this.seatToPlayerIndex.set(seatIndex, playerIndex);
+          // CRITICAL: Copy isAI flag from seat to player object
+          const player = this.warfaireInstance!.players[playerIndex];
+          if (player) {
+            player.isAI = seat.isAI || false;
+            console.log(`🎪 [SETUP] Player ${player.name} at index ${playerIndex}: isAI = ${player.isAI}`);
+          }
           playerIndex++;
         }
       });
@@ -263,11 +269,11 @@ export class WarFaireGame extends GameBase {
       this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}GroupSelection`;
       (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player, card }) => {
         // Find the seat for this player to get the socket ID
-        const playerIndex = this.warfaireInstance.players.indexOf(player);
+        const playerIndex = this.warfaireInstance!.players.indexOf(player);
         let seatPlayerId = null;
         for (const [seatIdx, pIdx] of this.seatToPlayerIndex.entries()) {
           if (pIdx === playerIndex) {
-            const seat = this.gameState.seats[seatIdx];
+            const seat = this.gameState!.seats[seatIdx];
             seatPlayerId = seat?.playerId;
             break;
           }
@@ -577,11 +583,11 @@ export class WarFaireGame extends GameBase {
               // Update cardsToFlip in game state and broadcast
               (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player: p, card }) => {
                 // Map player to seat to get socket ID
-                const pIndex = this.warfaireInstance.players.indexOf(p);
+                const pIndex = this.warfaireInstance!.players.indexOf(p);
                 let seatPlayerId = null;
                 for (const [sIdx, pIdx] of this.seatToPlayerIndex.entries()) {
                   if (pIdx === pIndex) {
-                    seatPlayerId = this.gameState.seats[sIdx]?.playerId;
+                    seatPlayerId = this.gameState!.seats[sIdx]?.playerId;
                     break;
                   }
                 }
