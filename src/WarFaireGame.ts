@@ -261,15 +261,29 @@ export class WarFaireGame extends GameBase {
       // Not all selections complete, enter group card selection phase and wait for humans
       console.log(`🎪 ⏳ NOT all selections complete - Entering GroupSelection phase`);
       this.gameState.phase = `Fair${this.currentFair}Round${this.currentRound}GroupSelection`;
-      (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player, card }) => ({
-        playerId: player.id,
-        card: {
-          category: card.category,
-          value: card.value,
-          isGroupCard: card.isGroupCard,
-          selectedCategory: card.selectedCategory
+      (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player, card }) => {
+        // Find the seat for this player to get the socket ID
+        const playerIndex = this.warfaireInstance.players.indexOf(player);
+        let seatPlayerId = null;
+        for (const [seatIdx, pIdx] of this.seatToPlayerIndex.entries()) {
+          if (pIdx === playerIndex) {
+            const seat = this.gameState.seats[seatIdx];
+            seatPlayerId = seat?.playerId;
+            break;
+          }
         }
-      }));
+        console.log(`🎪 [MAPPING] Player ${player.name} (array index ${playerIndex}) → seat playerId: ${seatPlayerId}`);
+
+        return {
+          playerId: seatPlayerId, // Use SEAT's playerId (socket ID), not player.id (array index)
+          card: {
+            category: card.category,
+            value: card.value,
+            isGroupCard: card.isGroupCard,
+            selectedCategory: card.selectedCategory
+          }
+        };
+      });
       this.syncWarFaireStateToSeats();
       this.broadcastGameState();
 
@@ -523,7 +537,20 @@ export class WarFaireGame extends GameBase {
         // Handle group card category selection for face-down cards about to flip
         if (this.gameState.phase.includes('GroupSelection') && data?.category) {
           const fairToFlipFrom = this.currentFair === 1 ? 0 : this.currentFair - 1;
-          const player = this.warfaireInstance?.players.find((p: any) => p.id === playerId);
+
+          // Find player by seat (playerId is socket ID, need to map to player index)
+          const seatIndex = this.gameState.seats.findIndex(s => s?.playerId === playerId);
+          if (seatIndex === -1) {
+            console.error(`🎪 [ERROR] select_flip_category: No seat found for playerId ${playerId}`);
+            break;
+          }
+          const playerIndex = this.seatToPlayerIndex.get(seatIndex);
+          if (playerIndex === undefined) {
+            console.error(`🎪 [ERROR] select_flip_category: No player index for seat ${seatIndex}`);
+            break;
+          }
+          const player = this.warfaireInstance?.players[playerIndex];
+
           if (player) {
             const cardToFlip = player.faceDownCards.find(
               (card: any) => card.playedFaceDownAtFair === fairToFlipFrom &&
@@ -548,15 +575,26 @@ export class WarFaireGame extends GameBase {
               }
 
               // Update cardsToFlip in game state and broadcast
-              (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player: p, card }) => ({
-                playerId: p.id,
-                card: {
-                  category: card.category,
-                  value: card.value,
-                  isGroupCard: card.isGroupCard,
-                  selectedCategory: card.selectedCategory
+              (this.gameState as any).cardsToFlip = cardsToFlip.map(({ player: p, card }) => {
+                // Map player to seat to get socket ID
+                const pIndex = this.warfaireInstance.players.indexOf(p);
+                let seatPlayerId = null;
+                for (const [sIdx, pIdx] of this.seatToPlayerIndex.entries()) {
+                  if (pIdx === pIndex) {
+                    seatPlayerId = this.gameState.seats[sIdx]?.playerId;
+                    break;
+                  }
                 }
-              }));
+                return {
+                  playerId: seatPlayerId, // Use socket ID, not array index
+                  card: {
+                    category: card.category,
+                    value: card.value,
+                    isGroupCard: card.isGroupCard,
+                    selectedCategory: card.selectedCategory
+                  }
+                };
+              });
               this.syncWarFaireStateToSeats();
               this.broadcastGameState();
 
