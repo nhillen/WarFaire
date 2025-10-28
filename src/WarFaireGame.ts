@@ -259,6 +259,12 @@ export class WarFaireGame extends GameBase {
 
       if (allSelected) {
         console.log(`🎪 ✅ ALL SELECTIONS COMPLETE - Proceeding immediately with flip (no GroupSelection phase)`);
+        // Clear any existing timer to prevent double-flipping
+        if (this.groupSelectionTimer) {
+          console.log(`🎪 [FIX] Clearing existing group selection timer to prevent double flip`);
+          clearTimeout(this.groupSelectionTimer);
+          this.groupSelectionTimer = null;
+        }
         // All selections made, proceed with flipping immediately without entering GroupSelection phase
         this.flipCardsAndContinue(cardsToFlip);
         return;
@@ -368,6 +374,12 @@ export class WarFaireGame extends GameBase {
     }
 
     // No group cards, proceed with flipping
+    // Clear any existing timer to prevent double-flipping
+    if (this.groupSelectionTimer) {
+      console.log(`🎪 [FIX] Clearing existing group selection timer (no group cards path)`);
+      clearTimeout(this.groupSelectionTimer);
+      this.groupSelectionTimer = null;
+    }
     this.flipCardsAndContinue(cardsToFlip);
     } catch (error) {
       console.error(`🎪 ERROR in startRound (Fair ${this.currentFair}, Round ${this.currentRound}):`, error);
