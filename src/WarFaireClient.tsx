@@ -817,16 +817,7 @@ export default function WarFaireClient({
   const hasActed = mySeat?.hasActed || false;
   const waitingForOthers = hasActed;
 
-  console.log('🎮 Game state:', {
-    phase: game.phase,
-    hasActed,
-    waitingForOthers,
-    myHandSize: myHand.length,
-    myPlayedCardsSize: myPlayedCards.length,
-    myId: meId,
-    mySeat: mySeat ? { name: mySeat.name, playerId: mySeat.playerId, hasActed: mySeat.hasActed } : null,
-    allSeats: game.seats?.map(s => s ? { playerId: s.playerId, name: s.name, hasActed: s.hasActed } : null)
-  });
+  // Debug logging removed - was causing spam on every render/mouseover
 
   // Calculate per-category leaders for CURRENT FAIR only
   const getCategoryLeaders = (categoryName: string) => {
