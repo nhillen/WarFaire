@@ -396,10 +396,14 @@ export class WarFaireGame extends GameBase {
   }
 
   private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>): void {
-    // Log call stack to identify double-flip source
-    const stack = new Error().stack;
-    const callerLine = stack?.split('\n')[2]?.trim() || 'unknown';
-    console.log(`🎪 [FLIP] flipCardsAndContinue called for ${cardsToFlip.length} cards from: ${callerLine}`);
+    console.log(`🎪 [FLIP] flipCardsAndContinue called for ${cardsToFlip.length} cards at ${Date.now()}`);
+
+    // CRITICAL: Prevent double-flipping by checking if already flipped this round
+    if ((this as any).lastFlipTime && Date.now() - (this as any).lastFlipTime < 1000) {
+      console.error(`🎪 [FLIP ERROR] Attempted double-flip! Last flip was ${Date.now() - (this as any).lastFlipTime}ms ago - IGNORING`);
+      return;
+    }
+    (this as any).lastFlipTime = Date.now();
 
     if (!this.warfaireInstance || !this.gameState) {
       console.error(`🎪 [FLIP ERROR] Missing warfaireInstance or gameState`);
