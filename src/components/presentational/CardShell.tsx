@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { getCardArt } from './cardArt';
+import { getCardArt } from './cardArt.js';
 
 interface CardShellProps {
   categoryId: string;
