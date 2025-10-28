@@ -396,7 +396,10 @@ export class WarFaireGame extends GameBase {
   }
 
   private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>): void {
-    console.log(`🎪 [FLIP] flipCardsAndContinue called for ${cardsToFlip.length} cards`);
+    // Log call stack to identify double-flip source
+    const stack = new Error().stack;
+    const callerLine = stack?.split('\n')[2]?.trim() || 'unknown';
+    console.log(`🎪 [FLIP] flipCardsAndContinue called for ${cardsToFlip.length} cards from: ${callerLine}`);
 
     if (!this.warfaireInstance || !this.gameState) {
       console.error(`🎪 [FLIP ERROR] Missing warfaireInstance or gameState`);
