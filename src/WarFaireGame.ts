@@ -495,11 +495,17 @@ export class WarFaireGame extends GameBase {
       throw broadcastError;
     }
 
-    // Schedule AI turn check - short delay to let state propagate, then AI plays immediately
-    if (this.aiTurnTimer) {
-      clearTimeout(this.aiTurnTimer);
+    // Check if this is an all-AI game - if so, schedule AI turns to keep the game moving
+    const hasHumanPlayers = this.warfaireInstance.players.some((p: any) => !p.isAI);
+    if (!hasHumanPlayers) {
+      console.log(`🎪 [FLIP] All-AI game detected - scheduling AI turns`);
+      if (this.aiTurnTimer) {
+        clearTimeout(this.aiTurnTimer);
+      }
+      this.aiTurnTimer = setTimeout(() => this.handleAITurns(), 500);
+    } else {
+      console.log(`🎪 [FLIP] Round ready - waiting for players to act (AI will play after human acts)`);
     }
-    this.aiTurnTimer = setTimeout(() => this.handleAITurns(), 500); // 500ms for state to propagate, then AI acts
 
     console.log(`🎪 [FLIP] flipCardsAndContinue completed successfully. New phase: ${this.gameState.phase}`);
     } catch (error) {
