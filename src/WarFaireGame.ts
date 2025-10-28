@@ -773,6 +773,9 @@ export class WarFaireGame extends GameBase {
         this.processRound();
       } else {
         console.log('🎪 [AI] NOT all players acted yet. Waiting...');
+        // CRITICAL: Broadcast state so frontend sees AI actions
+        this.syncWarFaireStateToSeats();
+        this.broadcastGameState();
       }
     } catch (error) {
       console.error('🎪 [AI] ERROR in handleAITurns:', error);
