@@ -495,11 +495,11 @@ export class WarFaireGame extends GameBase {
       throw broadcastError;
     }
 
-    // Schedule AI turn check with timeout (in case no humans act)
+    // Schedule AI turn check - short delay to let state propagate, then AI plays immediately
     if (this.aiTurnTimer) {
       clearTimeout(this.aiTurnTimer);
     }
-    this.aiTurnTimer = setTimeout(() => this.handleAITurns(), 5000); // 5 seconds for humans to act
+    this.aiTurnTimer = setTimeout(() => this.handleAITurns(), 500); // 500ms for state to propagate, then AI acts
 
     console.log(`🎪 [FLIP] flipCardsAndContinue completed successfully. New phase: ${this.gameState.phase}`);
     } catch (error) {
