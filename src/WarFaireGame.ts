@@ -273,7 +273,7 @@ export class WarFaireGame extends GameBase {
           this.groupSelectionTimer = null;
         }
         // All selections made, proceed with flipping immediately without entering GroupSelection phase
-        this.flipCardsAndContinue(cardsToFlip);
+        this.flipCardsAndContinue(cardsToFlip, this.currentFair, this.currentRound);
         return;
       }
 
@@ -333,9 +333,13 @@ export class WarFaireGame extends GameBase {
       (this.gameState as any).groupSelectionTimeoutStart = Date.now();
       (this.gameState as any).groupSelectionTimeoutDuration = timeoutMs;
 
+      // Capture current fair/round for timer validation
+      const timerFair = this.currentFair;
+      const timerRound = this.currentRound;
+
       this.groupSelectionTimer = setTimeout(() => {
         console.log(`🎪 ========================================`);
-        console.log(`🎪 [TIMEOUT] Group selection timer fired!`);
+        console.log(`🎪 [TIMEOUT] Group selection timer fired for Fair ${timerFair} Round ${timerRound}!`);
         console.log(`🎪 ========================================`);
         try {
           console.log(`🎪 [TIMEOUT] Auto-selecting for remaining players...`);
@@ -353,9 +357,9 @@ export class WarFaireGame extends GameBase {
               }
             }
           }
-          // Proceed with flipping
+          // Proceed with flipping (with fair/round validation)
           console.log(`🎪 [TIMEOUT] About to call flipCardsAndContinue with ${cardsToFlip.length} cards...`);
-          this.flipCardsAndContinue(cardsToFlip);
+          this.flipCardsAndContinue(cardsToFlip, timerFair, timerRound);
           console.log(`🎪 [TIMEOUT] flipCardsAndContinue returned successfully`);
         } catch (error) {
           console.error(`🎪 [ERROR] !!!!! Group selection timeout callback FAILED !!!!!`);
@@ -365,7 +369,7 @@ export class WarFaireGame extends GameBase {
           // Force transition to avoid being stuck
           try {
             console.log(`🎪 [ERROR] Attempting retry...`);
-            this.flipCardsAndContinue(cardsToFlip);
+            this.flipCardsAndContinue(cardsToFlip, timerFair, timerRound);
           } catch (retryError) {
             console.error(`🎪 [ERROR] Retry also failed. Forcing manual phase transition:`, retryError);
             this.gameState!.phase = `Fair${this.currentFair}Round${this.currentRound}`;
@@ -387,7 +391,7 @@ export class WarFaireGame extends GameBase {
       clearTimeout(this.groupSelectionTimer);
       this.groupSelectionTimer = null;
     }
-    this.flipCardsAndContinue(cardsToFlip);
+    this.flipCardsAndContinue(cardsToFlip, this.currentFair, this.currentRound);
     } catch (error) {
       console.error(`🎪 ERROR in startRound (Fair ${this.currentFair}, Round ${this.currentRound}):`, error);
       console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
@@ -395,8 +399,19 @@ export class WarFaireGame extends GameBase {
     }
   }
 
-  private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>): void {
+  private flipCardsAndContinue(cardsToFlip: Array<{ player: any; card: any }>, expectedFair?: number, expectedRound?: number): void {
     console.log(`🎪 [FLIP] flipCardsAndContinue called for ${cardsToFlip.length} cards at ${Date.now()}`);
+    console.log(`🎪 [FLIP] Expected Fair=${expectedFair || 'any'}, Round=${expectedRound || 'any'} | Current Fair=${this.currentFair}, Round=${this.currentRound}`);
+
+    // CRITICAL: Reject flips from stale timers
+    if (expectedFair !== undefined && expectedFair !== this.currentFair) {
+      console.error(`🎪 [FLIP ERROR] Stale flip from Fair ${expectedFair} rejected (current Fair ${this.currentFair}) - IGNORING`);
+      return;
+    }
+    if (expectedRound !== undefined && expectedRound !== this.currentRound) {
+      console.error(`🎪 [FLIP ERROR] Stale flip from Round ${expectedRound} rejected (current Round ${this.currentRound}) - IGNORING`);
+      return;
+    }
 
     // CRITICAL: Prevent double-flipping by checking if already flipped this round
     if ((this as any).lastFlipTime && Date.now() - (this as any).lastFlipTime < 1000) {
@@ -646,8 +661,8 @@ export class WarFaireGame extends GameBase {
                   clearTimeout(this.groupSelectionTimer);
                   this.groupSelectionTimer = null;
                 }
-                // All selections made, proceed with flipping
-                this.flipCardsAndContinue(cardsToFlip);
+                // All selections made, proceed with flipping (use current fair/round for validation)
+                this.flipCardsAndContinue(cardsToFlip, this.currentFair, this.currentRound);
               }
             }
           }
