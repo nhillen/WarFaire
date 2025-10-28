@@ -11,6 +11,7 @@ export class WarFaireGame extends GameBase {
   private aiTurnTimer: NodeJS.Timeout | null = null;
   private groupSelectionTimer: NodeJS.Timeout | null = null;
   private gameEndTimer: NodeJS.Timeout | null = null;
+  private roundSummaryTimer: NodeJS.Timeout | null = null;
   private isProcessingRound: boolean = false;
   private seatToPlayerIndex: Map<number, number> = new Map(); // Maps seat index to player index
 
@@ -130,49 +131,16 @@ export class WarFaireGame extends GameBase {
       (this.gameState as any).categoryPrestige = this.warfaireInstance.categoryPrestige;
       (this.gameState as any).currentFair = this.currentFair;
 
-      // Sync initial state (including the 3 initial face-down cards)
+      // Sync initial state (just the 3 initial face-down cards)
       this.syncWarFaireStateToSeats();
 
-      // For Round 1 only: Draw initial cards BEFORE flipping
-      // This allows players to see 3 face-down cards + have cards in hand
-      console.log('🎪 Drawing initial cards for Round 1...');
-      for (const player of this.warfaireInstance.players) {
-        const cardsBeforeDraw = player.hand.length;
-        for (let i = 0; i < 3; i++) {
-          if (this.warfaireInstance.deck.length > 0) {
-            player.addToHand(this.warfaireInstance.deck.pop());
-          }
-        }
-        console.log(`🎪 [INIT] ${player.name}: Drew ${player.hand.length - cardsBeforeDraw} cards, now has ${player.hand.length} in hand`);
-      }
-
-      // Update state with the drawn cards
-      this.syncWarFaireStateToSeats();
-
-      // Broadcast the complete initial state (3 face-down + 3 in hand)
-      console.log('🎪 [BROADCAST] About to broadcast initial state...');
+      // Broadcast the initial state (3 face-down cards, empty hand)
+      console.log('🎪 [BROADCAST] Broadcasting initial state (3 face-down cards)...');
       this.broadcastGameState();
-      console.log('🎪 [BROADCAST] Broadcasted initial state: 3 face-down cards + 3 cards in hand');
 
-      // Set a flag so startRound knows not to draw again for Round 1
-      (this.warfaireInstance as any).initialCardsDrawn = true;
-
-      // Delay the flip so players can see the complete initial state
-      console.log('🎪 [TIMING] Scheduling first round to start in 1 second...');
-      setTimeout(() => {
-        console.log('🎪 [TIMING] 1 second elapsed, starting first round now');
-        console.log('🎪 [TIMING] Before startRound, checking player states...');
-        for (const player of this.warfaireInstance!.players) {
-          console.log(`🎪 [TIMING] ${player.name} before startRound:`, {
-            faceDownCards: player.faceDownCards.length,
-            hand: player.hand.length,
-            playedCards: player.playedCards.length
-          });
-        }
-        // Start first round - will flip but not draw (since we already did)
-        this.startRound();
-        console.log('🎪 [TIMING] startRound completed');
-      }, 1000); // 1 second delay to show initial state
+      // Start first round immediately - it will flip 1 face-down to hand, then draw 3
+      console.log('🎪 Starting first round...');
+      this.startRound();
     } catch (error) {
       console.error('🎪 ERROR starting WarFaire game:', error);
       this.gameState.phase = 'Lobby';
@@ -188,7 +156,14 @@ export class WarFaireGame extends GameBase {
       this.currentRound++;
       this.pendingActions.clear();
 
-      console.log(`🎪 Fair ${this.currentFair}, Round ${this.currentRound}`);
+      console.log(`🎪 ========================================`);
+      console.log(`🎪 START ROUND: Fair ${this.currentFair}, Round ${this.currentRound}`);
+      console.log(`🎪 ========================================`);
+
+      // Debug: Log all player states at start of round
+      for (const player of this.warfaireInstance.players) {
+        console.log(`🎪 [START] ${player.name}: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
+      }
 
     // Update all players with current fair/round for metadata tracking
     for (const player of this.warfaireInstance.players) {
@@ -326,8 +301,11 @@ export class WarFaireGame extends GameBase {
       (this.gameState as any).groupSelectionTimeoutDuration = timeoutMs;
 
       this.groupSelectionTimer = setTimeout(() => {
+        console.log(`🎪 ========================================`);
+        console.log(`🎪 [TIMEOUT] Group selection timer fired!`);
+        console.log(`🎪 ========================================`);
         try {
-          console.log(`🎪 Group selection timeout - auto-selecting for remaining players`);
+          console.log(`🎪 [TIMEOUT] Auto-selecting for remaining players...`);
           // Auto-select for any remaining group cards that don't have a selection
           for (const { player, card } of cardsToFlip) {
             if (card.isGroupCard && !card.selectedCategory) {
@@ -343,20 +321,25 @@ export class WarFaireGame extends GameBase {
             }
           }
           // Proceed with flipping
-          console.log(`🎪 [TIMEOUT] Calling flipCardsAndContinue...`);
+          console.log(`🎪 [TIMEOUT] About to call flipCardsAndContinue with ${cardsToFlip.length} cards...`);
           this.flipCardsAndContinue(cardsToFlip);
-          console.log(`🎪 [TIMEOUT] flipCardsAndContinue completed successfully`);
+          console.log(`🎪 [TIMEOUT] flipCardsAndContinue returned successfully`);
         } catch (error) {
-          console.error(`🎪 [ERROR] Group selection timeout callback failed:`, error);
-          console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+          console.error(`🎪 [ERROR] !!!!! Group selection timeout callback FAILED !!!!!`);
+          console.error(`🎪 [ERROR] Error:`, error);
+          console.error(`🎪 [ERROR] Stack:`, error instanceof Error ? error.stack : 'No stack trace');
+          console.error(`🎪 [ERROR] This is why the game got stuck!`);
           // Force transition to avoid being stuck
           try {
+            console.log(`🎪 [ERROR] Attempting retry...`);
             this.flipCardsAndContinue(cardsToFlip);
           } catch (retryError) {
-            console.error(`🎪 [ERROR] Retry also failed. Forcing phase transition:`, retryError);
+            console.error(`🎪 [ERROR] Retry also failed. Forcing manual phase transition:`, retryError);
             this.gameState!.phase = `Fair${this.currentFair}Round${this.currentRound}`;
             this.syncWarFaireStateToSeats();
+            console.log(`🎪 [ERROR] Broadcasting forced state...`);
             this.broadcastGameState();
+            console.log(`🎪 [ERROR] Forced state broadcast complete`);
           }
         }
       }, timeoutMs);
@@ -386,17 +369,15 @@ export class WarFaireGame extends GameBase {
 
       console.log(`🎪 [FLIP] Starting to flip ${cardsToFlip.length} cards (Fair ${fairToFlipFrom} → Fair ${this.currentFair})...`);
 
-    // Flip face-down cards → they become face-up played cards
+    // Flip face-down cards → they become face-up played cards (NOT added to hand!)
     for (const { player, card } of cardsToFlip) {
+      console.log(`🎪 [FLIP] ${player.name} BEFORE flip: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
       const index = player.faceDownCards.indexOf(card);
       console.log(`🎪 [FLIP] ${player.name}: removing card at index ${index} from faceDownCards (${player.faceDownCards.length} total)`);
       player.faceDownCards.splice(index, 1);
       console.log(`🎪 [FLIP] ${player.name}: playing ${card.category} ${card.value} face-up to board`);
-      // Add metadata and push directly to playedCards (card is not in hand so can't use playCardFaceUp)
-      card.playedAtFair = player.currentFair || this.currentFair;
-      card.playedAtRound = player.currentRound || this.currentRound;
-      player.playedCards.push(card);
-      console.log(`🎪 [FLIP] ${player.name}: now has ${player.faceDownCards.length} face-down cards, ${player.playedCards.length} played cards`);
+      player.playCardFaceUp(card);  // PLAY to board, not add to hand!
+      console.log(`🎪 [FLIP] ${player.name} AFTER flip: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
       if (fairToFlipFrom === 0) {
         console.log(`🎪 ${player.name} flips initial face-down card #${this.currentRound} to board: ${card.category} ${card.value}`);
       } else {
@@ -406,24 +387,20 @@ export class WarFaireGame extends GameBase {
 
     console.log(`🎪 [FLIP] All cards flipped`);
 
-    // Deal cards to each player (unless Fair 3 or initial cards already drawn)
-    const shouldDrawCards = this.currentFair < 3 &&
-                          !(this.currentFair === 1 && this.currentRound === 1 && (this.warfaireInstance as any).initialCardsDrawn);
-
-    if (shouldDrawCards) {
+    // Deal cards to each player (unless Fair 3)
+    if (this.currentFair < 3) {
       console.log(`🎪 Drawing 3 cards per player...`);
       for (const player of this.warfaireInstance.players) {
+        const cardsBefore = player.hand.length;
+        console.log(`🎪 [DRAW] ${player.name} BEFORE draw: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
         for (let i = 0; i < 3; i++) {
           if (this.warfaireInstance.deck.length > 0) {
             player.addToHand(this.warfaireInstance.deck.pop());
           }
         }
+        console.log(`🎪 [DRAW] ${player.name} AFTER draw: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length} (drew ${player.hand.length - cardsBefore} cards)`);
       }
-    } else if ((this.warfaireInstance as any).initialCardsDrawn) {
-      console.log(`🎪 Skipping draw - initial cards already drawn for Round 1`);
-      // Clear the flag after first use
-      delete (this.warfaireInstance as any).initialCardsDrawn;
-    } else if (this.currentFair === 3) {
+    } else {
       console.log(`🎪 Fair 3 - no drawing, only playing face-down cards from Fair 2`);
     }
 
@@ -440,9 +417,16 @@ export class WarFaireGame extends GameBase {
     console.log(`🎪 [FLIP] State synced to seats`);
 
     // Broadcast state
-    console.log(`🎪 [FLIP] Broadcasting phase change to all clients...`);
-    this.broadcastGameState();
-    console.log(`🎪 [FLIP] Broadcast complete`);
+    console.log(`🎪 [FLIP] ========== BROADCASTING GAME STATE ==========`);
+    console.log(`🎪 [FLIP] Phase: ${this.gameState.phase}`);
+    console.log(`🎪 [FLIP] Players in game: ${this.gameState.seats.filter(s => s).length}`);
+    try {
+      this.broadcastGameState();
+      console.log(`🎪 [FLIP] ========== BROADCAST COMPLETE ==========`);
+    } catch (broadcastError) {
+      console.error(`🎪 [FLIP ERROR] !!!!! BROADCAST FAILED !!!!!`, broadcastError);
+      throw broadcastError;
+    }
 
     // Schedule AI turn check with timeout (in case no humans act)
     if (this.aiTurnTimer) {
@@ -595,6 +579,11 @@ export class WarFaireGame extends GameBase {
         break;
       case 'continue_from_summary':
         if (this.gameState.phase.startsWith('RoundSummary')) {
+          // Clear auto-continue timer since user manually continued
+          if (this.roundSummaryTimer) {
+            clearTimeout(this.roundSummaryTimer);
+            this.roundSummaryTimer = null;
+          }
           this.continueFromRoundSummary();
         } else if (this.gameState.phase.startsWith('FairSummary')) {
           // Check if game is complete (3 Fairs) or start next Fair
@@ -910,6 +899,15 @@ export class WarFaireGame extends GameBase {
 
       this.isProcessingRound = false;
       this.broadcastGameState();
+
+      // DISABLED: Auto-progression was causing disconnect issues
+      // if (this.roundSummaryTimer) {
+      //   clearTimeout(this.roundSummaryTimer);
+      // }
+      // this.roundSummaryTimer = setTimeout(() => {
+      //   console.log(`🎪 [AUTO] Auto-continuing from round summary...`);
+      //   this.continueFromRoundSummary();
+      // }, 3000);
     } catch (error) {
       console.error('🎪 ERROR in processRound:', error);
       console.error('🎪 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
@@ -1009,6 +1007,10 @@ export class WarFaireGame extends GameBase {
     if (this.aiTurnTimer) {
       clearTimeout(this.aiTurnTimer);
       this.aiTurnTimer = null;
+    }
+    if (this.roundSummaryTimer) {
+      clearTimeout(this.roundSummaryTimer);
+      this.roundSummaryTimer = null;
     }
 
     console.log(`🎪 Returning to lobby...`);
