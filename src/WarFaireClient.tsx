@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CardShell } from './components/presentational/CardShell';
-import { CardBack } from './components/presentational/CardBack';
-import { MiniCardChip } from './components/presentational/MiniCardChip';
-import { LeaderChip } from './components/presentational/LeaderChip';
-import { getCardArt } from './components/presentational/cardArt';
+import { CardShell } from './components/presentational/CardShell.js';
+import { CardBack } from './components/presentational/CardBack.js';
+import { MiniCardChip } from './components/presentational/MiniCardChip.js';
+import { LeaderChip } from './components/presentational/LeaderChip.js';
+import { getCardArt } from './components/presentational/cardArt.js';
 
 // Category emojis (kept for summary/results screens, removed from main UI)
 const CATEGORY_EMOJIS: Record<string, string> = {
