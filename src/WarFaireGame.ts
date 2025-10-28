@@ -454,13 +454,15 @@ export class WarFaireGame extends GameBase {
 
     console.log(`🎪 [FLIP] All cards flipped`);
 
-    // Deal cards to each player (unless Fair 3)
+    // Deal cards to each player to fill hand to 3 (unless Fair 3)
     if (this.currentFair < 3) {
-      console.log(`🎪 Drawing 3 cards per player...`);
+      const targetHandSize = 3;
+      console.log(`🎪 Drawing cards to fill hands to ${targetHandSize}...`);
       for (const player of this.warfaireInstance.players) {
         const cardsBefore = player.hand.length;
-        console.log(`🎪 [DRAW] ${player.name} BEFORE draw: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
-        for (let i = 0; i < 3; i++) {
+        const cardsToDraw = Math.max(0, targetHandSize - player.hand.length);
+        console.log(`🎪 [DRAW] ${player.name} BEFORE draw: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length} (will draw ${cardsToDraw})`);
+        for (let i = 0; i < cardsToDraw; i++) {
           if (this.warfaireInstance.deck.length > 0) {
             player.addToHand(this.warfaireInstance.deck.pop());
           }

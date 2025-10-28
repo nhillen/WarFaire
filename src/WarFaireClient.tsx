@@ -486,12 +486,58 @@ export default function WarFaireClient({
       const validCategories = activeCategories.filter(cat => cat.group === myCardToFlip.card.category);
 
       return (
-        <div className="h-full flex flex-col items-center justify-center p-8">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
-            <h2 className="text-2xl font-bold mb-4">Select Category for Face-Down Card</h2>
+        <div className="h-full flex flex-col md:flex-row gap-4 p-4 bg-slate-900">
+          {/* Left side: Category scores for strategic decision making */}
+          <div className="flex-1 bg-white rounded-lg shadow-lg p-6 overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4 text-slate-900">Category Standings</h2>
+            <p className="text-sm text-slate-600 mb-4">Your current scores to help decide where to play your card:</p>
+            <div className="space-y-4">
+              {validCategories.map(cat => {
+                const allScores = getAllCategoryScores(cat.name);
+                const myScore = allScores.find(p => p.playerId === meId);
+                const leaders = allScores.slice(0, 3);
+
+                return (
+                  <div key={cat.name} className="border border-slate-300 rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 bg-slate-100 border-b border-slate-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={getCardArt(cat.name.toLowerCase())}
+                            alt=""
+                            width="20"
+                            height="20"
+                            style={{ objectFit: 'contain' }}
+                          />
+                          <span className="text-sm font-bold text-slate-900">{cat.name}</span>
+                        </div>
+                        {myScore && (
+                          <span className="text-sm font-bold text-purple-600">You: {myScore.score}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="px-4 py-2 text-xs text-slate-700">
+                      <div className="font-semibold mb-1">Leaders:</div>
+                      {leaders.map((player, idx) => (
+                        <div key={player.playerId} className={`flex justify-between ${player.playerId === meId ? 'font-bold text-purple-600' : ''}`}>
+                          <span>{idx + 1}. {player.name}</span>
+                          <span>{player.score}</span>
+                        </div>
+                      ))}
+                      {allScores.length === 0 && <div className="text-slate-500 italic">No cards played yet</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right side: Card selection UI */}
+          <div className="w-full md:w-96 bg-white rounded-lg shadow-lg p-8 flex flex-col justify-center">
+            <h2 className="text-2xl font-bold mb-4">Select Category</h2>
             <p className="text-slate-600 mb-6">
-              You have a <span className="font-bold">{myCardToFlip.card.category}</span> group card ({myCardToFlip.card.value})
-              that's about to be revealed. Choose which category it should count towards:
+              Your <span className="font-bold">{myCardToFlip.card.category}</span> group card (value: {myCardToFlip.card.value})
+              is being revealed. Choose which category it should count towards:
             </p>
 
             <div className="space-y-3">
@@ -501,7 +547,7 @@ export default function WarFaireClient({
                   onClick={() => {
                     onPlayerAction('select_flip_category', { category: cat.name });
                   }}
-                  className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg font-medium"
+                  className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg font-medium transition-colors"
                 >
                   {cat.name}
                 </button>
