@@ -159,6 +159,13 @@ export class WarFaireGame extends GameBase {
     if (!this.warfaireInstance || !this.gameState) return;
 
     try {
+      // CRITICAL: Clear any existing timer at the START to prevent double-flipping
+      if (this.groupSelectionTimer) {
+        console.log(`🎪 [FIX] Clearing stale group selection timer at round start`);
+        clearTimeout(this.groupSelectionTimer);
+        this.groupSelectionTimer = null;
+      }
+
       this.currentRound++;
       this.pendingActions.clear();
 
