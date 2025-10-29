@@ -839,6 +839,11 @@ export class WarFaireGame extends GameBase {
 
           // Play face-down only in Fairs 1 and 2
           if (this.currentFair < 3 && player.hand.length > 0) {
+            console.log(`🎪 [AI] ${seat.name} BEFORE playCardFaceDown: faceDown=${player.faceDownCards.length} cards`);
+            player.faceDownCards.forEach((c: any, idx: number) => {
+              console.log(`🎪 [AI]   [${idx}] ${c.category}${c.value} (F${c.playedFaceDownAtFair}R${c.playedFaceDownAtRound})`);
+            });
+
             const faceDownCard = player.hand[Math.floor(Math.random() * player.hand.length)];
 
             // Handle group cards for face-down
@@ -853,9 +858,14 @@ export class WarFaireGame extends GameBase {
               }
             }
 
+            console.log(`🎪 [AI] AI ${seat.name} playing face-down: ${faceDownCard.category} ${faceDownCard.value} (will be tagged F${player.currentFair}R${player.currentRound})`);
             player.playCardFaceDown(faceDownCard);
-            console.log(`🎪 [AI] AI ${seat.name} played face-down for Fair ${this.currentFair + 1}: ${faceDownCard.category} (${faceDownCard.value})`);
-            console.log(`🎪 [AI] ${seat.name} after face-down play:`, {
+
+            console.log(`🎪 [AI] AI ${seat.name} AFTER playCardFaceDown: faceDown=${player.faceDownCards.length} cards`);
+            player.faceDownCards.forEach((c: any, idx: number) => {
+              console.log(`🎪 [AI]   [${idx}] ${c.category}${c.value} (F${c.playedFaceDownAtFair}R${c.playedFaceDownAtRound})`);
+            });
+            console.log(`🎪 [AI] ${seat.name} final state:`, {
               handRemaining: player.hand.length,
               faceDownCards: player.faceDownCards.length,
               playedCards: player.playedCards.length
@@ -956,10 +966,22 @@ export class WarFaireGame extends GameBase {
 
         // Only play face-down in Fairs 1 and 2
         if (faceDownCard) {
+          console.log(`🎪 [PROCESS] ${player.name} BEFORE playCardFaceDown: faceDown=${player.faceDownCards.length} cards`);
+          player.faceDownCards.forEach((c: any, idx: number) => {
+            console.log(`🎪 [PROCESS]   [${idx}] ${c.category}${c.value} (F${c.playedFaceDownAtFair}R${c.playedFaceDownAtRound})`);
+          });
+
           if (faceDownCard.isGroupCard && action.groupSelections?.faceDown) {
             faceDownCard.selectedCategory = action.groupSelections.faceDown;
           }
+
+          console.log(`🎪 [PROCESS] ${player.name} playing face-down: ${faceDownCard.category} ${faceDownCard.value} (will be tagged F${player.currentFair}R${player.currentRound})`);
           player.playCardFaceDown(faceDownCard);
+
+          console.log(`🎪 [PROCESS] ${player.name} AFTER playCardFaceDown: faceDown=${player.faceDownCards.length} cards`);
+          player.faceDownCards.forEach((c: any, idx: number) => {
+            console.log(`🎪 [PROCESS]   [${idx}] ${c.category}${c.value} (F${c.playedFaceDownAtFair}R${c.playedFaceDownAtRound})`);
+          });
         }
       }
     }
