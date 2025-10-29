@@ -1154,10 +1154,12 @@ export default function WarFaireClient({
                     <div className="chips">
                       {currentFairCards.length > 0 && currentFairCards.map((card: any, idx: number) => {
                         const effectiveCategory = card.selectedCategory || card.category;
+                        // For unselected group cards, use 'unknown' as categoryId
+                        const isUnselectedGroupCard = card.isGroupCard && !card.selectedCategory;
                         return (
                           <MiniCardChip
                             key={`up-${idx}`}
-                            categoryId={effectiveCategory.toLowerCase()}
+                            categoryId={isUnselectedGroupCard ? 'unknown' : effectiveCategory.toLowerCase()}
                             value={card.value}
                           />
                         );
@@ -1262,12 +1264,14 @@ export default function WarFaireClient({
                               {cardsInFair.map((card: any, i: number) => {
                                 const effectiveCategory = card.selectedCategory || card.category;
                                 const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
+                                const isUnselectedGroupCard = card.isGroupCard && !card.selectedCategory;
+                                const displayName = isUnselectedGroupCard ? `${effectiveCategory} (Group)` : effectiveCategory;
                                 return (
                                   <div key={`up-${fairNum}-${i}`} className="relative">
                                     <CardShell
-                                      categoryId={effectiveCategory.toLowerCase()}
-                                      name={effectiveCategory}
-                                      group={categoryInfo?.group}
+                                      categoryId={isUnselectedGroupCard ? 'unknown' : effectiveCategory.toLowerCase()}
+                                      name={displayName}
+                                      group={isUnselectedGroupCard ? effectiveCategory : categoryInfo?.group}
                                       value={card.value}
                                       isGroupCard={card.isGroupCard}
                                       selected={false}
