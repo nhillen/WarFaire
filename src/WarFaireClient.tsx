@@ -716,7 +716,7 @@ export default function WarFaireClient({
                       seat.playerId === meId
                         ? 'bg-blue-100 border-blue-400 shadow-md'
                         : isLeader
-                        ? 'bg-yellow-50 border-yellow-400 shadow-md'
+                        ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-400 shadow-md ring-1 ring-amber-400/20'
                         : 'bg-slate-50 border-slate-300'
                     }`}
                   >
@@ -726,7 +726,7 @@ export default function WarFaireClient({
                       <span className="text-xl">{seat.isAI ? '🤖' : '👤'}</span>
                       <span className="font-semibold text-lg">{seat.name}</span>
                     </div>
-                    <div className={`text-2xl font-bold ${isLeader ? 'text-yellow-700' : 'text-purple-600'}`}>
+                    <div className={`text-2xl font-bold ${isLeader ? 'text-amber-700' : 'text-purple-600'}`}>
                       {seat.totalVP || 0} VP
                     </div>
                   </div>
@@ -781,7 +781,7 @@ export default function WarFaireClient({
                     key={seat.playerId}
                     className={`flex items-center justify-between p-4 rounded-lg border ${
                       isWinner
-                        ? 'bg-yellow-50 border-yellow-400 ring-2 ring-yellow-400'
+                        ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-400 shadow-lg ring-1 ring-amber-400/30'
                         : seat.playerId === meId
                         ? 'bg-blue-50 border-blue-300'
                         : 'bg-slate-50 border-slate-200'
@@ -1352,7 +1352,7 @@ export default function WarFaireClient({
                 <div className="slot-mini">
                   <img src={getCardArt((slotA.card.getEffectiveCategory ? slotA.card.getEffectiveCategory() : slotA.card.category).toLowerCase())} alt="" />
                   {slotA.card.isGroupCard && (
-                    <div className="absolute top-1 left-1 bg-yellow-300 px-1 py-0.5 rounded text-xs font-bold">
+                    <div className="absolute top-1 left-1 bg-amber-300 px-1 py-0.5 rounded text-xs font-bold text-amber-900">
                       {slotA.card.category}
                     </div>
                   )}
@@ -1378,7 +1378,7 @@ export default function WarFaireClient({
                   <div className="slot-mini">
                     <img src={getCardArt((slotB.card.getEffectiveCategory ? slotB.card.getEffectiveCategory() : slotB.card.category).toLowerCase())} alt="" />
                     {slotB.card.isGroupCard && (
-                      <div className="absolute top-1 left-1 bg-yellow-300 px-1 py-0.5 rounded text-xs font-bold">
+                      <div className="absolute top-1 left-1 bg-amber-300 px-1 py-0.5 rounded text-xs font-bold text-amber-900">
                         {slotB.card.category}
                       </div>
                     )}
