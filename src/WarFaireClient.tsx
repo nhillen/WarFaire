@@ -292,29 +292,33 @@ export default function WarFaireClient({
   };
 
   const submitCards = () => {
-    if (!slotA || !slotB) {
+    // In Fair 3, only need slotA (face-up card). In Fairs 1 & 2, need both slots
+    if (!slotA || (currentFair < 3 && !slotB)) {
       return;
     }
 
     // Build group selections object
-    const faceUpCard = isFaceUp ? slotA.card : slotB.card;
-    const faceDownCard = isFaceUp ? slotB.card : slotA.card;
+    // In Fair 3, slotA is always face-up (single card play)
+    // In Fairs 1-2, determine which is face-up based on isFaceUp toggle
+    const faceUpCard = currentFair === 3 ? slotA.card : (isFaceUp ? slotA.card : slotB?.card);
+    const faceDownCard = currentFair === 3 ? null : (isFaceUp ? slotB?.card : slotA.card);
     const selections: { faceUp?: string; faceDown?: string } = {};
 
     // Debug logging
     console.log('Submit cards debug:', {
+      currentFair,
       isFaceUp,
-      slotA: slotA.card.category,
-      slotB: slotB.card.category,
-      faceUpCard: faceUpCard.category,
-      faceDownCard: faceDownCard.category,
+      slotA: slotA?.card.category,
+      slotB: slotB?.card.category,
+      faceUpCard: faceUpCard?.category,
+      faceDownCard: faceDownCard?.category,
       groupSelections
     });
 
     // Only handle selections for face-up cards (they score immediately and need category selection)
     // Face-down cards will have their category selected when they flip in future fairs
-    if (faceUpCard.isGroupCard) {
-      const slotKey = isFaceUp ? 'slotA' : 'slotB';
+    if (faceUpCard?.isGroupCard) {
+      const slotKey = currentFair === 3 ? 'slotA' : (isFaceUp ? 'slotA' : 'slotB');
       selections.faceUp = groupSelections[slotKey] || faceUpCard.getEffectiveCategory?.() || faceUpCard.category;
       console.log('Face-up group card selection:', { slotKey, selected: selections.faceUp });
     }
@@ -332,11 +336,13 @@ export default function WarFaireClient({
 
   // Only check for group selections on the face-up card
   // Face-down group cards will have their category selected when they flip in future fairs
-  const faceUpSlot = isFaceUp ? slotA : slotB;
+  // In Fair 3, slotA is always face-up
+  const faceUpSlot = currentFair === 3 ? slotA : (isFaceUp ? slotA : slotB);
   const faceUpHasSelection = !faceUpSlot || !faceUpSlot.card.isGroupCard ||
-    (isFaceUp ? groupSelections.slotA : groupSelections.slotB);
+    (currentFair === 3 ? groupSelections.slotA : (isFaceUp ? groupSelections.slotA : groupSelections.slotB));
 
-  const canSubmit = slotA && slotB && faceUpHasSelection;
+  // In Fair 3, only need slotA. In Fairs 1 & 2, need both slots
+  const canSubmit = slotA && (currentFair < 3 ? slotB : true) && faceUpHasSelection;
 
   // ===== LOADING STATE =====
   if (!game) {
@@ -1212,7 +1218,9 @@ export default function WarFaireClient({
                 {/* P0: Helper text under tabs */}
                 {activeTab === 'hand' && !waitingForOthers && myHand.length > 0 && (
                   <div className="hand-helper">
-                    Play 1 face-up for this fair and 1 face-down for the next fair.
+                    {currentFair < 3
+                      ? 'Play 1 face-up for this fair and 1 face-down for the next fair.'
+                      : 'Play 1 face-up card for this fair.'}
                   </div>
                 )}
               </div>
@@ -1356,41 +1364,45 @@ export default function WarFaireClient({
               </div>
             )}
 
-            {/* Slot B */}
-            {slotB ? (
-              isFaceUp ? (
-                // When A is face-up, B is face-down (next fair)
-                <div className="slot-mini">
-                  <img src="/assets/card_art/card_back.png" alt="Card back" />
-                  <div className="next-chip">next fair</div>
-                </div>
+            {/* Slot B - only show in Fairs 1 & 2 */}
+            {currentFair < 3 && (
+              slotB ? (
+                isFaceUp ? (
+                  // When A is face-up, B is face-down (next fair)
+                  <div className="slot-mini">
+                    <img src="/assets/card_art/card_back.png" alt="Card back" />
+                    <div className="next-chip">next fair</div>
+                  </div>
+                ) : (
+                  // When A is face-down, B is face-up (current fair)
+                  <div className="slot-mini">
+                    <img src={getCardArt((slotB.card.getEffectiveCategory ? slotB.card.getEffectiveCategory() : slotB.card.category).toLowerCase())} alt="" />
+                    {slotB.card.isGroupCard && (
+                      <div className="absolute top-1 left-1 bg-yellow-300 px-1 py-0.5 rounded text-xs font-bold">
+                        {slotB.card.category}
+                      </div>
+                    )}
+                  </div>
+                )
               ) : (
-                // When A is face-down, B is face-up (current fair)
                 <div className="slot-mini">
-                  <img src={getCardArt((slotB.card.getEffectiveCategory ? slotB.card.getEffectiveCategory() : slotB.card.category).toLowerCase())} alt="" />
-                  {slotB.card.isGroupCard && (
-                    <div className="absolute top-1 left-1 bg-yellow-300 px-1 py-0.5 rounded text-xs font-bold">
-                      {slotB.card.category}
-                    </div>
-                  )}
+                  <span className="text-xs text-slate-400">Slot B</span>
                 </div>
               )
-            ) : (
-              <div className="slot-mini">
-                <span className="text-xs text-slate-400">Slot B</span>
-              </div>
             )}
 
-            {/* Face-Up Toggle */}
-            <button
-              onClick={() => setIsFaceUp(!isFaceUp)}
-              className={`px-4 py-3 rounded-lg text-sm font-medium min-w-[100px] ${
-                isFaceUp ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-700'
-              }`}
-              aria-label={isFaceUp ? 'Slot A is face-up' : 'Slot B is face-up'}
-            >
-              {isFaceUp ? 'A Face-Up' : 'B Face-Up'}
-            </button>
+            {/* Face-Up Toggle - only show in Fairs 1 & 2 */}
+            {currentFair < 3 && (
+              <button
+                onClick={() => setIsFaceUp(!isFaceUp)}
+                className={`px-4 py-3 rounded-lg text-sm font-medium min-w-[100px] ${
+                  isFaceUp ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-700'
+                }`}
+                aria-label={isFaceUp ? 'Slot A is face-up' : 'Slot B is face-up'}
+              >
+                {isFaceUp ? 'A Face-Up' : 'B Face-Up'}
+              </button>
+            )}
 
             {/* Group Card Category Selection */}
             {/* NOTE: Selection happens for face-UP cards that score immediately */}
