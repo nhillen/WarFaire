@@ -903,15 +903,8 @@ export default function WarFaireClient({
 
         let score = categoryCards.reduce((sum, card) => sum + card.value, 0);
 
-        // Add face-down cards ONLY for the player themselves (not opponents)
-        // Use allMyFaceDownCards which includes the card being flipped during GroupSelection
-        if (seat.playerId === meId) {
-          const faceDownCategoryCards = allMyFaceDownCards.filter((card: any) => {
-            const effectiveCategory = card.selectedCategory || card.category;
-            return effectiveCategory === categoryName;
-          });
-          score += faceDownCategoryCards.reduce((sum: number, card: any) => sum + card.value, 0);
-        }
+        // Face-down cards should NOT count toward current Fair scoring
+        // They will count when they flip and become playedCards in the next Fair
 
         // Calculate delta (cards played in current round)
         const delta = categoryCards
