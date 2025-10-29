@@ -1146,13 +1146,9 @@ export default function WarFaireClient({
                   card.playedAtFair === currentFair
                 );
 
-                // Face-down cards that will flip THIS Fair should be shown
-                // Face-down cards for NEXT Fair should be hidden
+                // Show ALL face-down cards on the board (players need to see what they've saved)
+                // Scoring logic separately filters to only count cards for current Fair
                 const faceDownCards = (seat as any).faceDownCards || [];
-                const fairToFlipFrom = currentFair === 1 ? 0 : currentFair - 1;
-                const currentFairFaceDownCards = faceDownCards.filter((card: any) =>
-                  card.playedFaceDownAtFair === fairToFlipFrom
-                );
                 const isMyCards = seat.playerId === meId;
 
                 return (
@@ -1172,8 +1168,8 @@ export default function WarFaireClient({
                           />
                         );
                       })}
-                      {/* Show face-down cards that will flip in THIS Fair */}
-                      {currentFairFaceDownCards.length > 0 && currentFairFaceDownCards.map((card: any, idx: number) => (
+                      {/* Show all face-down cards */}
+                      {faceDownCards.length > 0 && faceDownCards.map((card: any, idx: number) => (
                         isMyCards ? (
                           // Show my face-down cards with details
                           <MiniCardChip

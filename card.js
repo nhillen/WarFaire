@@ -71,8 +71,15 @@ export function createDeck(activeCategories) {
     }
   }
 
-  // Add group cards for each group
-  for (const groupName of Object.values(GROUPS)) {
+  // Determine which groups have at least one active category
+  const activeGroups = new Set();
+  for (const categoryKey of activeCategories) {
+    const category = CATEGORIES[categoryKey];
+    activeGroups.add(category.group);
+  }
+
+  // Add group cards only for groups with active categories
+  for (const groupName of activeGroups) {
     for (const value of GROUP_CARD_VALUES) {
       deck.push(new Card(groupName, value, true));
     }
