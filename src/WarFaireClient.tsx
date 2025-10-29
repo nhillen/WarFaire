@@ -1142,9 +1142,7 @@ export default function WarFaireClient({
                   card.playedAtFair === currentFair
                 );
 
-                // Show face-down cards for next fair
-                const faceDownCards = (seat as any).faceDownCards || [];
-                const isMyCards = seat.playerId === meId;
+                // Face-down cards are hidden and will flip in future rounds
 
                 return (
                   <div key={seat.playerId} className="row">
@@ -1163,22 +1161,7 @@ export default function WarFaireClient({
                           />
                         );
                       })}
-                      {faceDownCards.length > 0 && faceDownCards.map((card: any, idx: number) => (
-                        isMyCards ? (
-                          // Show my face-down cards with details
-                          <MiniCardChip
-                            key={`down-${idx}`}
-                            categoryId={card.getEffectiveCategory ? card.getEffectiveCategory().toLowerCase() : (card.category ? card.category.toLowerCase() : 'unknown')}
-                            value={card.value}
-                          />
-                        ) : (
-                          // Show opponent face-down cards as individual backs
-                          <div key={`down-${idx}`} className="mini-chip">
-                            <img src="/assets/card_art/card_back.png" alt="Face-down card" />
-                            <span className="val">?</span>
-                          </div>
-                        )
-                      ))}
+                      {/* Face-down cards should NOT be displayed on the board - they're hidden until they flip in future rounds */}
                     </div>
                   </div>
                 );
