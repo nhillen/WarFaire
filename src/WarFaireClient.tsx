@@ -903,8 +903,19 @@ export default function WarFaireClient({
 
         let score = categoryCards.reduce((sum, card) => sum + card.value, 0);
 
-        // Face-down cards should NOT count toward current Fair scoring
-        // They will count when they flip and become playedCards in the next Fair
+        // Add face-down cards that will flip in THIS Fair (for the player's view only)
+        // These are cards tagged with playedFaceDownAtFair = 0 (Fair 1) or currentFair - 1 (Fair 2/3)
+        if (seat.playerId === meId) {
+          const fairToFlipFrom = currentFair === 1 ? 0 : currentFair - 1;
+          const currentFairFaceDownCards = allMyFaceDownCards.filter((card: any) =>
+            card.playedFaceDownAtFair === fairToFlipFrom
+          );
+          const faceDownCategoryCards = currentFairFaceDownCards.filter((card: any) => {
+            const effectiveCategory = card.selectedCategory || card.category;
+            return effectiveCategory === categoryName;
+          });
+          score += faceDownCategoryCards.reduce((sum: number, card: any) => sum + card.value, 0);
+        }
 
         // Calculate delta (cards played in current round)
         const delta = categoryCards
@@ -1135,7 +1146,14 @@ export default function WarFaireClient({
                   card.playedAtFair === currentFair
                 );
 
-                // Face-down cards are hidden and will flip in future rounds
+                // Face-down cards that will flip THIS Fair should be shown
+                // Face-down cards for NEXT Fair should be hidden
+                const faceDownCards = (seat as any).faceDownCards || [];
+                const fairToFlipFrom = currentFair === 1 ? 0 : currentFair - 1;
+                const currentFairFaceDownCards = faceDownCards.filter((card: any) =>
+                  card.playedFaceDownAtFair === fairToFlipFrom
+                );
+                const isMyCards = seat.playerId === meId;
 
                 return (
                   <div key={seat.playerId} className="row">
@@ -1154,7 +1172,23 @@ export default function WarFaireClient({
                           />
                         );
                       })}
-                      {/* Face-down cards should NOT be displayed on the board - they're hidden until they flip in future rounds */}
+                      {/* Show face-down cards that will flip in THIS Fair */}
+                      {currentFairFaceDownCards.length > 0 && currentFairFaceDownCards.map((card: any, idx: number) => (
+                        isMyCards ? (
+                          // Show my face-down cards with details
+                          <MiniCardChip
+                            key={`down-${idx}`}
+                            categoryId={card.selectedCategory ? card.selectedCategory.toLowerCase() : (card.category ? card.category.toLowerCase() : 'unknown')}
+                            value={card.value}
+                          />
+                        ) : (
+                          // Show opponent face-down cards as card backs
+                          <div key={`down-${idx}`} className="mini-chip">
+                            <img src="/assets/card_art/card_back.png" alt="Face-down card" />
+                            <span className="val">?</span>
+                          </div>
+                        )
+                      ))}
                     </div>
                   </div>
                 );
