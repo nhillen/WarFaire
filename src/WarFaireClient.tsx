@@ -1289,14 +1289,19 @@ export default function WarFaireClient({
                           <div className="text-sm font-semibold text-slate-700 mb-3">Face-Down (Future Rounds)</div>
                           <div className="grid grid-cols-3 gap-3">
                             {allMyFaceDownCards.map((card: any, i: number) => {
+                              // For group cards without selectedCategory, use the group name
                               const effectiveCategory = card.selectedCategory || card.category;
+                              // For group cards, effectiveCategory might be the group name, not a category name
                               const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
+                              const isUnselectedGroupCard = card.isGroupCard && !card.selectedCategory;
+                              const displayName = isUnselectedGroupCard ? `${effectiveCategory} (Group)` : effectiveCategory;
+
                               return (
                                 <div key={`down-${i}`} className="relative">
                                   <CardShell
-                                    categoryId={effectiveCategory.toLowerCase()}
-                                    name={effectiveCategory}
-                                    group={categoryInfo?.group}
+                                    categoryId={isUnselectedGroupCard ? 'unknown' : effectiveCategory.toLowerCase()}
+                                    name={displayName}
+                                    group={isUnselectedGroupCard ? effectiveCategory : categoryInfo?.group}
                                     value={card.value}
                                     isGroupCard={card.isGroupCard}
                                     selected={false}
