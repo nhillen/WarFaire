@@ -903,14 +903,9 @@ export default function WarFaireClient({
 
         let score = categoryCards.reduce((sum, card) => sum + card.value, 0);
 
-        // Add face-down cards that will flip in THIS Fair (for the player's view only)
-        // These are cards tagged with playedFaceDownAtFair = 0 (Fair 1) or currentFair - 1 (Fair 2/3)
+        // Add face-down cards that will flip in upcoming rounds (for the player's view only)
         if (seat.playerId === meId) {
-          const fairToFlipFrom = currentFair === 1 ? 0 : currentFair - 1;
-          const currentFairFaceDownCards = allMyFaceDownCards.filter((card: any) =>
-            card.playedFaceDownAtFair === fairToFlipFrom
-          );
-          const faceDownCategoryCards = currentFairFaceDownCards.filter((card: any) => {
+          const faceDownCategoryCards = allMyFaceDownCards.filter((card: any) => {
             const effectiveCategory = card.selectedCategory || card.category;
             return effectiveCategory === categoryName;
           });
@@ -1146,8 +1141,7 @@ export default function WarFaireClient({
                   card.playedAtFair === currentFair
                 );
 
-                // Show ALL face-down cards on the board (players need to see what they've saved)
-                // Scoring logic separately filters to only count cards for current Fair
+                // Face-down cards that will flip in upcoming rounds of THIS Fair
                 const faceDownCards = (seat as any).faceDownCards || [];
                 const isMyCards = seat.playerId === meId;
 
@@ -1168,7 +1162,7 @@ export default function WarFaireClient({
                           />
                         );
                       })}
-                      {/* Show all face-down cards */}
+                      {/* Show face-down cards for this Fair */}
                       {faceDownCards.length > 0 && faceDownCards.map((card: any, idx: number) => (
                         isMyCards ? (
                           // Show my face-down cards with details

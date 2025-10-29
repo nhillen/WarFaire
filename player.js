@@ -5,7 +5,8 @@ export class Player {
     this.name = name;
     this.id = id;
     this.hand = [];
-    this.faceDownCards = []; // Cards that will auto-play next round
+    this.faceDownCards = []; // Cards that will flip during THIS Fair (current round tracking)
+    this.nextFairFaceDownCards = []; // Cards saved for NEXT Fair
     this.playedCards = []; // Cards played this Fair
     this.ribbons = []; // Ribbons earned { category, type: 'gold'|'silver'|'bronze', vp }
     this.totalVP = 0;
@@ -42,7 +43,8 @@ export class Player {
       // Tag the card with which round it was played
       card.playedFaceDownAtFair = this.currentFair;
       card.playedFaceDownAtRound = this.currentRound;
-      this.faceDownCards.push(card);
+      // Cards go into nextFairFaceDownCards (will be moved to faceDownCards at start of next Fair)
+      this.nextFairFaceDownCards.push(card);
       return true;
     }
     return false;
@@ -85,12 +87,16 @@ export class Player {
   clearForNextFair() {
     this.hand = [];
     this.playedCards = [];
-    // Keep ribbons and face-down cards
+    // Move next Fair's face-down cards into current Fair's face-down cards
+    this.faceDownCards = [...this.nextFairFaceDownCards];
+    this.nextFairFaceDownCards = [];
+    // Keep ribbons
   }
 
   reset() {
     this.hand = [];
     this.faceDownCards = [];
+    this.nextFairFaceDownCards = [];
     this.playedCards = [];
     this.ribbons = [];
     this.totalVP = 0;

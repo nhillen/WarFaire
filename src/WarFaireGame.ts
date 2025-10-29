@@ -587,6 +587,7 @@ export class WarFaireGame extends GameBase {
         // Add face-up and face-down cards separately
         (seat as any).faceUpCards = wfPlayer.faceUpCards || [];
         (seat as any).faceDownCards = wfPlayer.faceDownCards || [];
+        (seat as any).nextFairFaceDownCards = wfPlayer.nextFairFaceDownCards || [];
 
         // Add current round's face-up card (last card in playedCards if any this round)
         const recentCards = wfPlayer.playedCards.slice(-1);
