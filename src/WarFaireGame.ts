@@ -560,7 +560,13 @@ export class WarFaireGame extends GameBase {
             ? () => c.selectedCategory
             : () => c.category
         }));
-        seat.playedCards = wfPlayer.playedCards;
+        // Also add getEffectiveCategory to playedCards so group cards work on the board
+        seat.playedCards = wfPlayer.playedCards.map((c: any) => ({
+          ...c,
+          getEffectiveCategory: c.isGroupCard && c.selectedCategory
+            ? () => c.selectedCategory
+            : () => c.category
+        }));
         seat.ribbons = wfPlayer.ribbons;
         seat.totalVP = wfPlayer.totalVP;
 
