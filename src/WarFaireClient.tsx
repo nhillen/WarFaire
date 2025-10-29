@@ -27,9 +27,10 @@ type Card = {
   category: string;
   value: number;
   isGroupCard: boolean;
+  selectedCategory?: string; // For group cards, the specific category they were played as
   playedAtFair?: number;
   playedAtRound?: number;
-  getEffectiveCategory?: () => string; // Method from backend Card class
+  getEffectiveCategory?: () => string; // Method from backend Card class (not serialized via Socket.IO)
 };
 
 type Seat = {
@@ -874,7 +875,7 @@ export default function WarFaireClient({
         // Only count cards played in the current fair
         const score = seat.playedCards
           .filter(card => {
-            const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+            const effectiveCategory = card.selectedCategory || card.category;
             return effectiveCategory === categoryName && card.playedAtFair === currentFair;
           })
           .reduce((sum, card) => sum + card.value, 0);
@@ -895,8 +896,8 @@ export default function WarFaireClient({
       if (seat && seat.playedCards) {
         // Calculate total score for this category
         const categoryCards = seat.playedCards.filter(card => {
-          // Handle both plain category names and cards with getEffectiveCategory method
-          const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+          // For group cards, use selectedCategory; otherwise use category
+          const effectiveCategory = card.selectedCategory || card.category;
           return effectiveCategory === categoryName;
         });
 
@@ -906,7 +907,7 @@ export default function WarFaireClient({
         // Use allMyFaceDownCards which includes the card being flipped during GroupSelection
         if (seat.playerId === meId) {
           const faceDownCategoryCards = allMyFaceDownCards.filter((card: any) => {
-            const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+            const effectiveCategory = card.selectedCategory || card.category;
             return effectiveCategory === categoryName;
           });
           score += faceDownCategoryCards.reduce((sum: number, card: any) => sum + card.value, 0);
@@ -1153,7 +1154,7 @@ export default function WarFaireClient({
                     <span className="text-sm font-medium text-white">{seat.name}</span>
                     <div className="chips">
                       {currentFairCards.length > 0 && currentFairCards.map((card: any, idx: number) => {
-                        const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                        const effectiveCategory = card.selectedCategory || card.category;
                         return (
                           <MiniCardChip
                             key={`up-${idx}`}
@@ -1225,7 +1226,7 @@ export default function WarFaireClient({
                       {myHand.map((card, i) => {
                         const isSelected = slotA?.index === i || slotB?.index === i;
                         // Get effective category (handles group cards)
-                        const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                        const effectiveCategory = card.selectedCategory || card.category;
                         const displayName = card.isGroupCard ? `${card.category} (Group)` : card.category;
                         // Find the group for this category
                         const categoryInfo = activeCategories.find(cat => cat.name === effectiveCategory);
@@ -1259,7 +1260,7 @@ export default function WarFaireClient({
                             <div className="text-sm font-semibold text-slate-700 mb-3">Fair {fairNum}</div>
                             <div className="grid grid-cols-3 gap-3">
                               {cardsInFair.map((card: any, i: number) => {
-                                const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                                const effectiveCategory = card.selectedCategory || card.category;
                                 const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
                                 return (
                                   <div key={`up-${fairNum}-${i}`} className="relative">
@@ -1288,7 +1289,7 @@ export default function WarFaireClient({
                           <div className="text-sm font-semibold text-slate-700 mb-3">Face-Down (Future Rounds)</div>
                           <div className="grid grid-cols-3 gap-3">
                             {allMyFaceDownCards.map((card: any, i: number) => {
-                              const effectiveCategory = card.getEffectiveCategory ? card.getEffectiveCategory() : card.category;
+                              const effectiveCategory = card.selectedCategory || card.category;
                               const categoryInfo = activeCategories.find((cat: any) => cat.name === effectiveCategory);
                               return (
                                 <div key={`down-${i}`} className="relative">
