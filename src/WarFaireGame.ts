@@ -433,9 +433,14 @@ export class WarFaireGame extends GameBase {
     // Flip face-down cards → they become face-up played cards (NOT added to hand!)
     for (const { player, card } of cardsToFlip) {
       console.log(`🎪 [FLIP] ${player.name} BEFORE flip: hand=${player.hand.length}, faceDown=${player.faceDownCards.length}, played=${player.playedCards.length}`);
+      console.log(`🎪 [FLIP] ${player.name} face-down cards BEFORE removal:`, player.faceDownCards.map((c: any) => `${c.category}${c.value}(F${c.playedFaceDownAtFair}R${c.playedFaceDownAtRound})`).join(', '));
+
       const index = player.faceDownCards.indexOf(card);
       console.log(`🎪 [FLIP] ${player.name}: removing card at index ${index} from faceDownCards (${player.faceDownCards.length} total)`);
+      console.log(`🎪 [FLIP] ${player.name}: card to remove: ${card.category} ${card.value} (Fair ${card.playedFaceDownAtFair} Round ${card.playedFaceDownAtRound})`);
+
       player.faceDownCards.splice(index, 1);
+      console.log(`🎪 [FLIP] ${player.name} face-down cards AFTER removal:`, player.faceDownCards.map((c: any) => `${c.category}${c.value}(F${c.playedFaceDownAtFair}R${c.playedFaceDownAtRound})`).join(', '));
       console.log(`🎪 [FLIP] ${player.name}: playing ${card.category} ${card.value} face-up to board`);
 
       // CRITICAL: playCardFaceUp() expects card to be in hand, but it's not!
@@ -542,6 +547,15 @@ export class WarFaireGame extends GameBase {
           console.error(`🎪 [SYNC ERROR] No player found at player index ${playerIndex} for seat ${seatIndex}`);
           return;
         }
+
+        // Detailed logging of face-down cards with their tags
+        console.log(`🎪 [SYNC] Player ${wfPlayer.name} face-down cards (${wfPlayer.faceDownCards?.length || 0}):`);
+        if (wfPlayer.faceDownCards && wfPlayer.faceDownCards.length > 0) {
+          wfPlayer.faceDownCards.forEach((card: any, idx: number) => {
+            console.log(`🎪 [SYNC]   [${idx}] ${card.category} ${card.value} - Fair ${card.playedFaceDownAtFair || '?'}, Round ${card.playedFaceDownAtRound || '?'}`);
+          });
+        }
+
         // Debug log player state
         console.log(`🎪 [SYNC] Player ${wfPlayer.name}:`, {
           handCount: wfPlayer.hand.length,
