@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WarFaire (working title: "State Fair") is a strategic card game prototype built in Node.js. Players compete to win ribbons across multiple categories (Carrots, Pies, Pumpkins, etc.) that belong to groups (Produce, Baking, Livestock). The game features a unique progressive prestige system where popular categories become more valuable over time, and players must balance short-term wins with long-term strategy by playing cards face-down for future rounds.
+WarFaire (working title: "State Fair") is a strategic card game built in Node.js for the AnteTown gaming platform. Players compete to win ribbons across multiple categories (Carrots, Pies, Pumpkins, etc.) that belong to groups (Produce, Baking, Livestock). The game features a unique progressive prestige system where popular categories become more valuable over time, and players must balance short-term wins with long-term strategy by playing cards face-down for future rounds.
+
+**Status**: ✅ Fully functional with multiplayer support via Socket.IO and interactive web UI. Can run standalone for development or integrate with AnteTown platform for production.
 
 ## Development Commands
 
@@ -73,17 +75,23 @@ The game operates in a hierarchical structure: **Game → Fairs → Rounds → P
 
 ### Current Implementation Status
 
-The prototype uses **random AI** for all player decisions:
-- Card selection in `game.js:playRound` (lines 103-131)
-- Group card category selection when played
-- To add interactive gameplay, modify these decision points to accept user input
+**Fully implemented**:
+- ✅ Interactive player decisions via web UI
+- ✅ Multiplayer networking via Socket.IO
+- ✅ Real-time game state updates
+- ✅ Player card selection and submission
+- ✅ Group card category assignment
+- ✅ Comprehensive test suite (58 tests)
+
+**Development modes**:
+- **CLI mode** (`npm start`): Uses random AI for automated testing
+- **Web mode** (`npm run server`): Full interactive multiplayer gameplay
 
 **Not yet implemented**:
-- Interactive player decisions (UI/input system)
-- Multiplayer networking
-- Test framework (no unit tests)
 - Advanced variants from GDD.md (static prestige, hand carryover, etc.)
 - Proper validation for invalid face-down cards when categories are retired
+- Save/load game state
+- Mobile-optimized UI
 
 ## Important Game Rules
 

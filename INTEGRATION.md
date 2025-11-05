@@ -1,10 +1,10 @@
-# WarFaire → PiratePlunder Platform Integration
+# WarFaire → AnteTown Platform Integration
 
-This guide shows how to integrate WarFaire into the PiratePlunder multi-game platform.
+This guide shows how to integrate WarFaire into the AnteTown multi-game platform.
 
 ## Current Architecture
 
-WarFaire is a standalone game with its own server. The PiratePlunder platform provides:
+WarFaire is a standalone game with its own server. The AnteTown platform provides:
 - ✅ User authentication (Google OAuth)
 - ✅ Database (PostgreSQL with Prisma)
 - ✅ Shared game infrastructure (`GameBase`, `GameRegistry`)
@@ -14,7 +14,7 @@ WarFaire is a standalone game with its own server. The PiratePlunder platform pr
 ## Integration Workflow
 
 ```
-WarFaire Repo                     Verdaccio Registry          PiratePlunder Platform
+WarFaire Repo                     Verdaccio Registry          AnteTown Platform
 ─────────────                     ──────────────────          ──────────────────────
 1. Extend GameBase   ──build──>   2. Publish Package         3. Install & Register
    src/WarFaireGame.ts               @pirate/game-warfare        gameRegistry.register()
@@ -493,17 +493,17 @@ npm run publish:verdaccio
 
 ## Step 7: Integrate into Platform
 
-In the PiratePlunder repository:
+In the AnteTown platform repository:
 
 ### Backend Integration
 
-1. **Install package** (in backend workspace):
+1. **Install package** (in platform backend):
 ```bash
-cd /home/nathan/GitHub/PiratePlunder
-npm install --workspace @pirate/game-pirate-plunder-backend @pirate/game-warfaire@latest
+cd /home/nathan/GitHub/PiratePlunder-new
+npm install --prefix platform/backend @pirate/game-warfaire@latest
 ```
 
-2. **Register game** in `games/pirate-plunder/backend/src/server.ts`:
+2. **Register game** in `platform/backend/src/server.ts`:
 ```typescript
 import { WarFaireGame } from '@pirate/game-warfaire';
 
@@ -534,12 +534,12 @@ if (selectedGameType === 'warfaire') {
 
 ### Frontend Integration
 
-1. **Import WarFaireClient** in `games/pirate-plunder/frontend/src/components/GameApp.tsx`:
+1. **Import WarFaireClient** in `platform/frontend/src/App.tsx`:
 ```typescript
 import { WarFaireClient } from '@pirate/game-warfaire';
 ```
 
-2. **Add WarFaire rendering** (around line 700):
+2. **Add WarFaire rendering** in the game router:
 ```typescript
 {gameType === 'coin-flip' ? (
   <CoinFlipTable ... />
@@ -557,37 +557,42 @@ import { WarFaireClient } from '@pirate/game-warfaire';
 )}
 ```
 
-3. **Add to GameSelector** in `games/pirate-plunder/frontend/src/components/GameSelector.tsx`:
+3. **Add to GameHub** in `platform/frontend/src/components/GameHub.tsx`:
 ```typescript
-export type GameType = 'coin-flip' | 'pirate-plunder' | 'warfaire'
-
 const games = [
   // ... existing games
   {
-    gameId: 'warfaire-1',
-    gameType: 'warfaire',
-    displayName: 'War Faire',
-    description: 'State fair card game with prestige, ribbons, and competitive scoring!',
-    minPlayers: 4,
-    maxPlayers: 10,
-    emoji: '🎪',
+    id: 'warfaire',
+    icon: '🎪',
+    title: 'War Faire',
+    blurb: 'State fair card game with prestige, ribbons, and competitive scoring!',
+    playersOnline: 0,
+    avgWait: 'New!',
+    tags: ['Strategy', 'Cards'] as ('Strategy' | 'Cards')[]
   }
 ]
 ```
 
-4. **Add GameRouter case** in `games/pirate-plunder/frontend/src/components/GameRouter.tsx`:
+4. **Add hash routing** in `platform/frontend/src/App.tsx`:
 ```typescript
-case 'warfaire':
-  return <GameApp gameType="warfaire" onBackToMenu={handleBackToSelector} />
+if (currentGame === 'warfaire') {
+  return <WarFaireClient />;
+}
 ```
 
 ### Deploy
 
 ```bash
-# Build and deploy
+# Build and deploy platform (from AnteTown repository)
+cd /home/nathan/GitHub/PiratePlunder-new
 make build
-# Use Tailscale SSH deployment method from CLAUDE.md
+
+# Deploy to production
+tailscale ssh deploy@vps-0b87e710.tail751d97.ts.net \
+  "cd /opt/AnteTown && git pull origin main && make build && sudo systemctl restart AnteTown"
 ```
+
+See [AnteTown DEPLOY.md](https://github.com/drybrushgames/PiratePlunder-new/blob/main/DEPLOY.md) for complete deployment instructions.
 
 ## Development Workflow
 
@@ -596,7 +601,7 @@ make build
 1. Edit WarFaire code in this repo (backend or frontend)
 2. Increment version in package.json (0.1.2 → 0.1.3)
 3. `npm run build && npm run publish:verdaccio`
-4. In PiratePlunder: `npm update @pirate/game-warfaire`
+4. In AnteTown platform: `npm update @pirate/game-warfaire`
 5. Rebuild and redeploy platform
 
 ### Testing Locally
@@ -611,7 +616,8 @@ Or test integrated with platform:
 # Link for local development
 npm link
 
-# In PiratePlunder
+# In AnteTown platform
+cd /home/nathan/GitHub/PiratePlunder-new/platform/backend
 npm link @pirate/game-warfaire
 ```
 
@@ -634,4 +640,4 @@ npm link @pirate/game-warfaire
 5. Publish to Verdaccio
 6. Integrate and deploy to platform
 
-See the full guide at: `PiratePlunder/docs/game-integration-guide.md`
+See the full guide at: [AnteTown Platform DEPLOY.md](https://github.com/drybrushgames/PiratePlunder-new/blob/main/DEPLOY.md)

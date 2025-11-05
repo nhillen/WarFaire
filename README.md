@@ -1,6 +1,22 @@
 # WarFaire
 
+**A strategic card game for the AnteTown gaming platform**
+
 A strategic card game about showcasing produce and baked goods across a series of State Fairs.
+
+---
+
+## 🎮 Platform Integration
+
+**WarFaire integrates with the [AnteTown platform](https://github.com/drybrushgames/PiratePlunder-new)** for production deployment.
+
+- **Standalone mode**: Run locally with `npm run server` for development
+- **Platform mode**: Deployed as `@pirate/game-warfaire` package on AnteTown
+- **Production URL**: https://antetown.com/#game/warfaire (when integrated)
+
+For integration instructions, see [INTEGRATION.md](./INTEGRATION.md)
+
+---
 
 ## About
 
