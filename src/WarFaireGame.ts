@@ -1,4 +1,4 @@
-import { GameBase, GameState, Seat, Player, WinnerResult } from '@pirate/game-sdk';
+import { GameBase, GameState, Seat, Player, WinnerResult, GameMetadata } from '@pirate/game-sdk';
 import { Game } from '../game.js';
 import { scoreFair, updatePrestige } from '../scorer.js';
 
@@ -19,6 +19,17 @@ export class WarFaireGame extends GameBase {
     super(tableConfig);
     this.tableConfig.maxSeats = 10; // WarFaire supports up to 10 players
     this.initializeGameState('Lobby'); // Initialize with lobby state
+  }
+
+  /**
+   * Get game metadata for platform integration
+   */
+  getMetadata(): GameMetadata {
+    return {
+      emoji: '🎪',
+      botNamePrefix: 'WarBot',
+      defaultBuyIn: 0 // WarFaire doesn't use betting
+    };
   }
 
   /**
