@@ -217,11 +217,12 @@ export default function WarFaireClient({
     if (!isSeated) {
       console.log(`🪑 Player ${meId} sitting at seat ${seatIndex}`);
       onSitDown(seatIndex, 1000);
-    } else {
-      // If already seated, add AI to this seat
-      console.log(`🪑 Adding AI to seat ${seatIndex}`);
+    } else if (isAdmin) {
+      // If already seated and admin, add AI to this seat
+      console.log(`🪑 Admin adding AI to seat ${seatIndex}`);
       onPlayerAction('add_ai', { count: 1, seatIndex });
     }
+    // Non-admin seated players can't click empty seats
   };
 
   // ===== DEBUG LOGGING =====
@@ -376,8 +377,11 @@ export default function WarFaireClient({
             {!isSeated && (
               <p className="text-xs text-purple-600 font-medium">Click an empty seat to join</p>
             )}
-            {isSeated && (
-              <p className="text-xs text-slate-500">Click empty seats to add AI players</p>
+            {isSeated && !isAdmin && (
+              <p className="text-xs text-slate-500">Waiting for more players...</p>
+            )}
+            {isAdmin && (
+              <p className="text-xs text-slate-500">Admin: Click empty seats to add AI players</p>
             )}
           </div>
 
@@ -405,7 +409,7 @@ export default function WarFaireClient({
                     <>
                       <div className="text-lg mb-1 text-slate-400">💺</div>
                       <div className="text-slate-400 text-[10px]">
-                        {isSeated ? 'Add AI' : 'Sit Here'}
+                        {!isSeated ? 'Sit Here' : isAdmin ? 'Add AI' : 'Empty'}
                       </div>
                     </>
                   )}
@@ -423,7 +427,7 @@ export default function WarFaireClient({
                 Start Game
               </button>
             )}
-            {emptySeats >= 9 && (
+            {isAdmin && emptySeats >= 9 && (
               <button
                 onClick={() => {
                   console.log('🎪 Clicked +9 AI button');
@@ -434,7 +438,7 @@ export default function WarFaireClient({
                 +9 AI
               </button>
             )}
-            {emptySeats >= 4 && (
+            {isAdmin && emptySeats >= 4 && (
               <button
                 onClick={() => {
                   console.log('🎪 Clicked +4 AI button');
@@ -445,7 +449,7 @@ export default function WarFaireClient({
                 +4 AI
               </button>
             )}
-            {emptySeats > 0 && (
+            {isAdmin && emptySeats > 0 && (
               <button
                 onClick={() => {
                   console.log('🎪 Clicked Fill All button');
